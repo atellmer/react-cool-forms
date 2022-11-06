@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "moduleResolution": "node",
+    "module": "esnext",
+    "outDir": "./dist/",
+    "sourceMap": true,
+    "noImplicitAny": false,
+    "removeComments": false,
+    "downlevelIteration": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "jsx": "react",
+    "lib": [
+      "es6",
+      "es7",
+      "dom"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "react-cool-forms": [
+        "./src/index"
+      ],
+      "react-cool-forms/*": [
+        "./src/*"
+      ],
+    }
+  },
+  "include": [
+    "./src/**/*",
+    "./examples/**/*",
+    "./*.js"
+  ]
+}
