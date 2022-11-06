@@ -1,14 +1,14 @@
-export type Validator<T = unknown, S extends object = any> = {
-  fn: (options: ValidatorFnOptions<T, S>) => boolean | Promise<boolean>;
+export type FormValidator<T = unknown, S extends object = any> = {
+  method: (options: ValidatorMethodOptions<T, S>) => boolean | Promise<boolean>;
   message: string;
 };
 
-export type SyntheticValidator<T = unknown, S extends object = any> = {
+export type SyntheticFormValidator<T = unknown, S extends object = any> = {
   name: string;
   getValue: (formValue: S) => T;
-} & Validator;
+} & FormValidator;
 
-type ValidatorFnOptions<T = unknown, S extends object = any> = {
+type ValidatorMethodOptions<T = unknown, S extends object = any> = {
   value: T;
   formValue: S;
 };

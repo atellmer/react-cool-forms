@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useState, useImperativeHandle, useCallback } from 'react';
 
 import { clone } from './utils';
-import { type SyntheticValidator } from './validators';
+import { type SyntheticFormValidator } from './validators';
 
 export type FormProps<T extends object = any> = {
   initialValue: T;
@@ -37,26 +37,29 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const validate = useCallback(
     (formValue: T): Promise<boolean> => {
       return new Promise(async resolve => {
-        let errors: Record<string, string> = null;
+        let newErrors: Record<string, string> = null;
         const validationResults: Array<boolean> = [];
 
         if (scope.validators.length === 0) {
-          errors && setErrors(null);
+          newErrors && setErrors(null);
           onValidate({ formValue, errors: null, isValid: true });
 
           return resolve(true);
         }
 
         for (const validator of scope.validators) {
-          const isValid = await validator.fn({ formValue, value: validator.getValue(formValue) });
+          const value = validator.getValue(formValue);
+          const isValid = await validator.method({ formValue, value });
 
           validationResults.push(isValid);
 
           if (!isValid) {
-            if (!errors) {
-              errors = {};
+            if (!newErrors) {
+              newErrors = {};
             }
-            errors[validator.name] = validator.message;
+            if (!newErrors[validator.name]) {
+              newErrors[validator.name] = validator.message;
+            }
             if (interruptValidation) {
               break;
             }
@@ -68,10 +71,10 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
         if (isValid) {
           errors && setErrors(null);
         } else {
-          setErrors({ ...errors });
+          setErrors({ ...newErrors });
         }
 
-        onValidate({ formValue, errors, isValid });
+        onValidate({ formValue, errors: newErrors, isValid });
         resolve(isValid);
       });
     },
@@ -148,7 +151,7 @@ export type FormRef<T extends object> = {
 export type FormScope<T extends object> = {
   formValue: T;
   errors: Record<string, string> | null;
-  validators: Array<SyntheticValidator>;
+  validators: Array<SyntheticFormValidator>;
   isSubmiting: boolean;
 } & Pick<FormRef<T>, 'modify' | 'validate' | 'submit' | 'reset'>;
 

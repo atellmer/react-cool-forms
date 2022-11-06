@@ -1,14 +1,14 @@
-import React, { useCallback, memo, useEffect } from 'react';
+import React, { useCallback, memo, useEffect, useMemo } from 'react';
 
 import { useFormScope } from './form';
-import { type Validator, type SyntheticValidator } from './validators';
+import { type FormValidator, type SyntheticFormValidator } from './validators';
 
-export type FieldProps<T = unknown, S extends object = any> = {
+export type FieldProps<T = any, S extends object = any> = {
   name: string;
   getValue: (formValue: S) => T;
   setValue: (formValue: S, fieldValue: T) => void;
-  validators?: Array<Validator<T, S>>;
-  updatingKey?: string;
+  validators?: Array<FormValidator<T, S>>;
+  updatingKey?: string | number;
   children: (options: FieldChildrenOptions<T>) => React.ReactElement;
 };
 
@@ -18,11 +18,12 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
   const { formValue, errors, isSubmiting } = formScope;
   const value = getValue(formValue);
   const error = errors ? errors[name] || null : null;
-  const updatingKey = `${externalUpdatingKey}:${value}:${error}:${isSubmiting}`;
+  const valueID = useMemo(() => getNextValueID(), [value]);
+  const updatingKey = `${externalUpdatingKey}:${valueID}:${error}:${isSubmiting}`;
 
   useEffect(() => {
     const syntheticValidators = validators.map(x => {
-      const validator: SyntheticValidator = {
+      const validator: SyntheticFormValidator = {
         ...x,
         name,
         getValue,
@@ -30,7 +31,7 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
 
       return validator;
     });
-    formScope.validators.push(...(syntheticValidators as Array<SyntheticValidator>));
+    formScope.validators.push(...syntheticValidators);
 
     return () => {
       const [validator] = syntheticValidators;
@@ -71,5 +72,9 @@ type FieldChildrenOptions<T = unknown> = {
   error: string | null;
   onChange: (value: T) => void;
 };
+
+let nextValueID = 0;
+
+const getNextValueID = () => ++nextValueID;
 
 export { Field };
