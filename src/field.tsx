@@ -1,6 +1,6 @@
-import React, { useMemo, useCallback, memo } from 'react';
+import React, { useCallback, memo } from 'react';
 
-import { useFormState, FormStateContextValue } from './form';
+import { useFormScope, FormScope } from './form';
 
 export type FieldProps<T = unknown, S extends object = any> = {
   name: string;
@@ -11,19 +11,18 @@ export type FieldProps<T = unknown, S extends object = any> = {
 
 function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement {
   const { name, getValue, setValue } = props;
-  const formState = useFormState<S>();
-  const { formValue, errors, modify } = formState;
-  const value = useMemo(() => getValue(formValue), [formValue, getValue]);
+  const { scope: formScope } = useFormScope<S>();
+  const { formValue, errors } = formScope;
+  const value = getValue(formValue);
   const error = errors[name] || null;
   const updatingKey = `${value}:${error}`;
 
-  const handleChange = useCallback(
-    (value: T) => {
-      setValue(formValue, value);
-      modify({ ...formValue });
-    },
-    [formValue, setValue],
-  );
+  const handleChange = useCallback((value: T) => {
+    const { formValue, modify } = formScope;
+
+    setValue(formValue, value);
+    modify(formValue);
+  }, []);
 
   return (
     <FieldInner
@@ -31,7 +30,7 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
       updatingKey={updatingKey}
       value={value}
       error={error}
-      formState={formState}
+      formScope={formScope}
       onChange={handleChange}
     />
   );
@@ -39,13 +38,13 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
 
 export type FieldInnerProps<T = unknown, S extends object = any> = {
   updatingKey: string;
-  formState: FormStateContextValue;
+  formScope: FormScope<S>;
 } & FieldProps<T, S> &
   FieldChildrenOptions<T>;
 
 const FieldInner = memo(
   function <T, S extends object>(props: FieldInnerProps<T, S>): React.ReactElement {
-    const { value, error, formState, children, onChange } = props;
+    const { value, error, formScope, children, onChange } = props;
 
     return children({ value, error, onChange });
   },

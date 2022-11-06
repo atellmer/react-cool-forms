@@ -1,30 +1,34 @@
 import React, { createContext, useContext, useMemo, useState, useImperativeHandle, useCallback } from 'react';
 
+import { clone } from './utils';
+
 export type FormProps<T extends object = any> = {
   initialValue: T;
-  innerRef?: React.RefObject<FormRef>;
+  innerRef?: React.RefObject<FormRef<T>>;
   children: (options: FormChildrenOptions<T>) => React.ReactElement;
   onValidate?: (options: OnValidationOptions<T>) => void;
   onChange?: (options: OnChangeOptions<T>) => void;
   onSubmit: (options: OnSubmitOptions<T>) => void;
 };
 
-export type FormRef = {};
-
 function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const { initialValue, innerRef, children, onValidate, onChange, onSubmit } = props;
-  const [formValue, setFormValue] = useState<T>(initialValue);
+  const [formValue, setFormValue] = useState<T>(clone(initialValue));
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useImperativeHandle(innerRef, () => ({}));
 
   const modify = useCallback(
     (formValue: T) => {
-      setFormValue(formValue);
-      onChange({ formValue });
+      const newFormValue = { ...formValue };
+
+      setFormValue(newFormValue);
+      onChange({ formValue: newFormValue });
     },
     [onChange],
   );
+
+  const reset = useCallback(() => {
+    modify(clone(initialValue));
+  }, [onChange]);
 
   const validate = useCallback(
     (formValue: T): Promise<boolean> => {
@@ -42,18 +46,30 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     validate(formValue).then(isValid => isValid && onSubmit({ formValue }));
   }, [formValue]);
 
-  const value = useMemo<FormStateContextValue<T>>(
-    () => ({
-      formValue,
-      errors,
-      modify,
-      validate,
-      submit,
-    }),
-    [formValue, errors],
-  );
+  const scope = useMemo(() => ({ formValue, errors, modify, validate, submit, reset }), []);
 
-  return <FormStateContext.Provider value={value}>{children({ formValue, modify, submit })}</FormStateContext.Provider>;
+  scope.formValue = formValue;
+  scope.errors = errors;
+  scope.modify = modify;
+  scope.validate = validate;
+  scope.submit = submit;
+  scope.reset = reset;
+
+  const value = useMemo<FormStateContextValue<T>>(() => ({ scope }), [formValue, errors]);
+
+  useImperativeHandle(innerRef, () => ({
+    getFormValue: () => formValue,
+    modify,
+    validate,
+    submit,
+    reset,
+  }));
+
+  return (
+    <FormStateContext.Provider value={value}>
+      {children({ formValue, errors, reset, submit })}
+    </FormStateContext.Provider>
+  );
 }
 
 const FormComponent: React.FC<FormProps> = Form;
@@ -65,37 +81,50 @@ FormComponent.defaultProps = {
 
 const FormStateContext = createContext<FormStateContextValue>(null);
 
-function useFormState<T extends object>() {
+function useFormScope<T extends object>() {
   const value = useContext<FormStateContextValue<T>>(FormStateContext);
 
   return value;
 }
 
-export type FormStateContextValue<T extends object = any> = {
-  formValue: T;
-  errors: Record<string, string>;
+function useFormState<T extends object>() {
+  const { scope } = useContext<FormStateContextValue<T>>(FormStateContext);
+
+  return { ...scope };
+}
+
+export type FormRef<T extends object> = {
+  getFormValue: () => T;
   modify: (formValue: T) => void;
   validate: (formValue: T) => void;
   submit: () => void;
+  reset: () => void;
 };
 
-type FormChildrenOptions<T> = {
+export type FormScope<T extends object> = {
   formValue: T;
-  modify: (formValue: T) => void;
-  submit: () => void;
+  errors: Record<string, string>;
+} & Pick<FormRef<T>, 'modify' | 'validate' | 'submit' | 'reset'>;
+
+type FormStateContextValue<T extends object = any> = {
+  scope: FormScope<T>;
 };
 
-type OnSubmitOptions<T> = {
+type SharedCallbackOptions<T extends object> = {
   formValue: T;
 };
 
-type OnValidationOptions<T> = {
-  formValue: T;
+type FormChildrenOptions<T extends object> = {
+  errors: Record<string, string>;
+} & SharedCallbackOptions<T> &
+  Pick<FormRef<T>, 'submit' | 'reset'>;
+
+type OnSubmitOptions<T extends object> = {} & SharedCallbackOptions<T>;
+
+type OnValidationOptions<T extends object> = {
   isValid: boolean;
-};
+} & SharedCallbackOptions<T>;
 
-type OnChangeOptions<T> = {
-  formValue: T;
-};
+type OnChangeOptions<T extends object> = {} & SharedCallbackOptions<T>;
 
-export { Form, useFormState };
+export { Form, useFormScope, useFormState };

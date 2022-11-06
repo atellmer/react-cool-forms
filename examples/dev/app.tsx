@@ -4,20 +4,31 @@ import { Form, Field } from 'react-cool-forms';
 export type AppProps = {};
 
 const App: React.FC<AppProps> = props => {
-  const initialValue: User = { userName: 'Alex' };
+  const initialValue: User = { firstName: 'Alex', lastName: 'Plex' };
 
   return (
-    <Form initialValue={initialValue} onSubmit={() => {}} onChange={x => console.log('change', x)}>
-      {({ formValue, submit }) => {
+    <Form initialValue={initialValue} onSubmit={() => {}}>
+      {({ formValue, errors, submit, reset }) => {
         return (
           <>
             <Field
-              name='userName'
-              getValue={(user: User) => user.userName}
-              setValue={(user: User, value: string) => (user.userName = value)}>
-              {({ value, error, onChange }) => <input value={value} onChange={e => onChange(e.target.value)} />}
+              name='firstName'
+              getValue={(user: User) => user.firstName}
+              setValue={(user: User, value: string) => (user.firstName = value)}>
+              {({ value, error, onChange }) => {
+                return <input value={value} onChange={e => onChange(e.target.value)} />;
+              }}
+            </Field>
+            <Field
+              name='lastName'
+              getValue={(user: User) => user.lastName}
+              setValue={(user: User, value: string) => (user.lastName = value)}>
+              {({ value, error, onChange }) => {
+                return <input value={value} onChange={e => onChange(e.target.value)} />;
+              }}
             </Field>
             <button onClick={submit}>Submit</button>
+            <button onClick={reset}>Reset</button>
           </>
         );
       }}
@@ -26,7 +37,8 @@ const App: React.FC<AppProps> = props => {
 };
 
 type User = {
-  userName: string;
+  firstName: string;
+  lastName: string;
 };
 
 export { App };
