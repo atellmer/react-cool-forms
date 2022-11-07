@@ -9,6 +9,7 @@ export type FieldProps<T = unknown, S extends object = any> = {
   setValue: (formValue: S, fieldValue: T) => void;
   validators?: Array<Validator<T, S>>;
   updatingKey?: string | number;
+  enableOnChangeValidation?: boolean;
   children: (options: FieldChildrenOptions<T>) => React.ReactElement;
   onValidate?: (options: OnValidateFieldOptions) => void;
 };
@@ -20,6 +21,7 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
     setValue,
     validators: sourceValidators = [],
     updatingKey: externalUpdatingKey = '',
+    enableOnChangeValidation,
     onValidate,
   } = props;
   const { scope: formScope } = useFormScope<S>();
@@ -28,13 +30,13 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
   const value = getValue(formValue);
   const error = errors ? errors[name] || null : null;
   const valueID = useMemo(() => getNextValueID(), [value]);
-  const scope = useMemo(() => ({ nodeRef, onValidate }), []);
+  const scope = useMemo<FieldScope>(() => ({ nodeRef, validators: [], onValidate }), []);
   const updatingKey = `${externalUpdatingKey}:${valueID}:${error}:${isSubmiting}`;
 
   scope.nodeRef = nodeRef;
   scope.onValidate = onValidate;
 
-  useEffect(() => {
+  const createValidators = () => {
     const validators: Array<SyntheticValidator> = sourceValidators.map(validator => {
       return {
         ...validator,
@@ -45,19 +47,35 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
       };
     });
 
-    validators.forEach(x => addValidator(x));
+    return validators;
+  };
+
+  useEffect(() => {
+    scope.validators = createValidators();
+    scope.validators.forEach(x => addValidator(x));
 
     return () => {
-      validators.forEach(x => removeValidator(x));
+      scope.validators.forEach(x => removeValidator(x));
+      scope.validators = [];
     };
   }, []);
 
-  const handleChange = useCallback((value: T) => {
-    const { formValue, modify } = formScope;
+  const handleChange = useCallback(
+    (value: T) => {
+      const { formValue, modify, validateField } = formScope;
+      const validators = scope.validators;
 
-    setValue(formValue, value);
-    modify(formValue);
-  }, []);
+      setValue(formValue, value);
+      modify(formValue);
+
+      if (enableOnChangeValidation && validators.length > 0) {
+        (async () => {
+          await validateField({ name, formValue, validators });
+        })();
+      }
+    },
+    [name, enableOnChangeValidation],
+  );
 
   return (
     <FieldInner
@@ -75,6 +93,12 @@ const FieldComponent: React.FC<FieldProps> = Field;
 
 FieldComponent.defaultProps = {
   onValidate: () => {},
+};
+
+type FieldScope = {
+  nodeRef: React.RefObject<any>;
+  validators: Array<SyntheticValidator>;
+  onValidate: (options: OnValidateFieldOptions) => void;
 };
 
 export type FieldInnerProps<T = unknown, S extends object = any> = {

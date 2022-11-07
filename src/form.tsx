@@ -39,15 +39,16 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
       return new Promise(async resolve => {
         let newErrors: Record<string, string> = null;
         const validationResults: Array<boolean> = [];
+        const validators = scope.validators;
 
-        if (scope.validators.length === 0) {
+        if (validators.length === 0) {
           newErrors && setErrors(null);
           onValidate({ formValue, errors: null, isValid: true });
 
           return resolve(true);
         }
 
-        for (const validator of scope.validators) {
+        for (const validator of validators) {
           const fieldValue = validator.getValue(formValue);
           const isValid = await validator.method({ formValue, fieldValue });
 
@@ -85,6 +86,39 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     [errors, onValidate],
   );
 
+  const validateField = useCallback(
+    (options: ValidateFieldOptions<T>): Promise<boolean> => {
+      return new Promise(async resolve => {
+        const { name, formValue, validators } = options;
+        let brokenValidator: SyntheticValidator = null;
+
+        for (const validator of validators) {
+          const fieldValue = validator.getValue(formValue);
+          const isValid = await validator.method({ formValue, fieldValue });
+
+          if (!isValid) {
+            brokenValidator = validator;
+            break;
+          }
+        }
+
+        const isValid = !brokenValidator;
+
+        if (isValid) {
+          if (errors && errors[name]) {
+            delete errors[name];
+            setErrors({ ...errors });
+          }
+        } else {
+          setErrors({ ...errors, [name]: brokenValidator.message });
+        }
+
+        resolve(isValid);
+      });
+    },
+    [errors],
+  );
+
   const submit = useCallback(() => {
     setInProcess(true);
     validate(formValue).then(isValid => {
@@ -112,6 +146,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
       inProcess: inProcess,
       modify,
       validate,
+      validateField,
       submit,
       reset,
       addValidator,
@@ -126,6 +161,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   scope.inProcess = inProcess;
   scope.modify = modify;
   scope.validate = validate;
+  scope.validateField = validateField;
   scope.submit = submit;
   scope.reset = reset;
   scope.addValidator = addValidator;
@@ -184,7 +220,14 @@ export type FormScope<T extends object> = {
   inProcess: boolean;
   addValidator: (validator: SyntheticValidator) => void;
   removeValidator: (validator: SyntheticValidator) => void;
+  validateField: (options: ValidateFieldOptions<T>) => Promise<boolean>;
 } & Pick<FormRef<T>, 'modify' | 'validate' | 'submit' | 'reset'>;
+
+type ValidateFieldOptions<T extends object> = {
+  name: string;
+  formValue: T;
+  validators: Array<SyntheticValidator>;
+};
 
 type FormStateContextValue<T extends object = any> = {
   scope: FormScope<T>;

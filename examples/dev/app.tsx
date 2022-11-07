@@ -16,7 +16,7 @@ const App: React.FC<AppProps> = props => {
       connectedRef={formRef}
       initialFormValue={initialFormValue}
       //interruptValidation
-      onSubmit={x => {}}>
+      onSubmit={x => console.log('submit', x)}>
       {({ formValue, errors, inProcess, submit, reset }) => {
         return (
           <>
@@ -25,6 +25,7 @@ const App: React.FC<AppProps> = props => {
               getValue={(user: Person) => user.firstName}
               setValue={(user: Person, value: string) => (user.firstName = value)}
               validators={[required as Validator<string, Person>]}
+              enableOnChangeValidation
               onValidate={({ nodeRef, isValid }) => {
                 const node = nodeRef.current as HTMLInputElement;
 
@@ -48,6 +49,7 @@ const App: React.FC<AppProps> = props => {
               name='lastName'
               getValue={(user: Person) => user.lastName}
               setValue={(user: Person, value: string) => (user.lastName = value)}
+              enableOnChangeValidation
               validators={[required as Validator<string, Person>]}>
               {({ value, error, onChange }) => {
                 //console.log('render lastName');
@@ -63,6 +65,7 @@ const App: React.FC<AppProps> = props => {
               name='age'
               getValue={(user: Person) => user.age}
               setValue={(user: Person, value: number) => (user.age = value)}
+              enableOnChangeValidation
               validators={[required as Validator<number, Person>, adult]}>
               {({ value, error, onChange }) => {
                 //console.log('render age');
