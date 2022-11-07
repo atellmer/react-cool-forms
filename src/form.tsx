@@ -1,6 +1,14 @@
-import React, { createContext, useContext, useMemo, useState, useImperativeHandle, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useImperativeHandle,
+  useCallback,
+  useEffect,
+} from 'react';
 
-import { clone, detecIsFunction } from './utils';
+import { clone, detecIsFunction, CONTEXT_ERROR } from './utils';
 import { type SyntheticValidator } from './validators';
 
 export type FormProps<T extends object = any> = {
@@ -10,14 +18,20 @@ export type FormProps<T extends object = any> = {
   children: (options: FormChildrenOptions<T>) => React.ReactElement;
   onValidate?: (options: OnValidateOptions<T>) => void;
   onChange?: (options: OnChangeOptions<T>) => void;
+  onUnmount?: () => void;
   onSubmit: (options: OnSubmitOptions<T>) => void;
 };
 
 function Form<T extends object>(props: FormProps<T>): React.ReactElement {
-  const { initialFormValue, connectedRef, interruptValidation, children, onValidate, onChange, onSubmit } = props;
+  const { initialFormValue, connectedRef, interruptValidation, children, onValidate, onChange, onSubmit, onUnmount } =
+    props;
   const [formValue, setFormValue] = useState<T>(clone(initialFormValue));
   const [errors, setErrors] = useState<Record<string, string>>(null);
   const [inProcess, setInProcess] = useState(false);
+
+  useEffect(() => {
+    return () => detecIsFunction(onUnmount) && onUnmount();
+  }, []);
 
   const modify = useCallback(
     (formValue: T) => {
@@ -218,11 +232,15 @@ const FormStateContext = createContext<FormStateContextValue>(null);
 function useFormContext<T extends object>() {
   const value = useContext<FormStateContextValue<T>>(FormStateContext);
 
+  if (!value) {
+    throw new Error(CONTEXT_ERROR);
+  }
+
   return value;
 }
 
-function useFormState<T extends object>() {
-  const { scope } = useContext<FormStateContextValue<T>>(FormStateContext);
+function useFormState() {
+  const { scope } = useFormContext();
 
   return { ...scope };
 }

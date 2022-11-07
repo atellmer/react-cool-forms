@@ -10,7 +10,10 @@ const App: React.FC<AppProps> = props => {
     lastName: 'Plex',
     age: 18,
     position: null,
-    skills: [{ name: 'coding' }, { name: 'learning' }],
+    skills: [
+      { ID: 1, name: 'coding' },
+      { ID: 2, name: 'learning' },
+    ],
   };
 
   useEffect(() => {
@@ -31,7 +34,7 @@ const App: React.FC<AppProps> = props => {
               getValue={(person: Person) => person.firstName}
               setValue={(person: Person, value: string) => (person.firstName = value)}
               validators={[required as Validator<string, Person>]}
-              //enableOnChangeValidation
+              enableOnChangeValidation
               onValidate={({ nodeRef, isValid }) => {
                 const node = nodeRef.current as HTMLInputElement;
 
@@ -55,7 +58,7 @@ const App: React.FC<AppProps> = props => {
               name='lastName'
               getValue={(person: Person) => person.lastName}
               setValue={(person: Person, value: string) => (person.lastName = value)}
-              //enableOnChangeValidation
+              enableOnChangeValidation
               validators={[required as Validator<string, Person>]}>
               {({ value, error, onChange }) => {
                 //console.log('render lastName');
@@ -71,7 +74,7 @@ const App: React.FC<AppProps> = props => {
               name='age'
               getValue={(person: Person) => person.age}
               setValue={(person: Person, value: number) => (person.age = value)}
-              //enableOnChangeValidation
+              enableOnChangeValidation
               validators={[required as Validator<number, Person>, adult]}>
               {({ value, error, onChange }) => {
                 //console.log('render age');
@@ -92,7 +95,7 @@ const App: React.FC<AppProps> = props => {
               name='position'
               getValue={(person: Person) => person.position}
               setValue={(person: Person, value: Position) => (person.position = value)}
-              //enableOnChangeValidation
+              enableOnChangeValidation
               validators={[required as Validator<Position, Person>]}>
               {({ value, error, onChange }) => {
                 //console.log('render position');
@@ -115,28 +118,43 @@ const App: React.FC<AppProps> = props => {
             <Repeater
               name='skills'
               getValue={(person: Person) => person.skills}
-              setValue={(person: Person, value: Array<Skill>) => (person.skills = value)}>
-              {({ inProcess }) => {
+              setValue={(person: Person, value: Array<Skill>) => (person.skills = value)}
+              getKey={x => x.ID}
+              renderAddTrigger={({ add, inProcess }) => (
+                <div>
+                  <button disabled={inProcess} onClick={() => add({ ID: getNextSkillID(), name: '' })}>
+                    add item
+                  </button>
+                </div>
+              )}>
+              {({ idx, inProcess, isSingle, remove }) => {
                 return (
-                  <Field
-                    name='name'
-                    getValue={(skill: Skill) => skill.name}
-                    setValue={(skill: Skill, value: string) => (skill.name = value)}
-                    //enableOnChangeValidation
-                    validators={[required as Validator<string, Skill>]}>
-                    {({ value, error, onChange }) => {
-                      //console.log('render skill', value);
-                      return (
-                        <div>
-                          <input value={value} disabled={inProcess} onChange={e => onChange(e.target.value)} />
-                          {error && <div style={{ color: 'red' }}>{error}</div>}
-                        </div>
-                      );
-                    }}
-                  </Field>
+                  <>
+                    <Field
+                      name='name'
+                      getValue={(skill: Skill) => skill.name}
+                      setValue={(skill: Skill, value: string) => (skill.name = value)}
+                      enableOnChangeValidation
+                      validators={[required as Validator<string, Skill>]}>
+                      {({ value, error, onChange }) => {
+                        //console.log('render skill', value);
+                        return (
+                          <div>
+                            <input value={value} disabled={inProcess} onChange={e => onChange(e.target.value)} />
+                            {error && <div style={{ color: 'red' }}>{error}</div>}
+                          </div>
+                        );
+                      }}
+                    </Field>
+                    <button disabled={isSingle || inProcess} onClick={() => remove(idx)}>
+                      remove item
+                    </button>
+                  </>
                 );
               }}
             </Repeater>
+            <br />
+            <br />
             <button disabled={inProcess} onClick={submit}>
               Submit
             </button>
@@ -178,7 +196,12 @@ type Position = {
 };
 
 type Skill = {
+  ID: number;
   name: string;
 };
+
+let nextSkillID = 2;
+
+const getNextSkillID = () => ++nextSkillID;
 
 export { App };

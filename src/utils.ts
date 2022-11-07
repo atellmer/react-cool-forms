@@ -11,4 +11,8 @@ function detecIsFunction(value: unknown): value is Function {
   return typeof value === 'function';
 }
 
-export { clone, detecIsFunction };
+function dummy() {}
+
+const CONTEXT_ERROR = 'Context of Form not found!';
+
+export { clone, detecIsFunction, dummy, CONTEXT_ERROR };
