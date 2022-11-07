@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Form, Field, type FormRef, type Validator } from 'react-cool-forms';
+import { Form, Field, Debugger, type FormRef, type Validator } from 'react-cool-forms';
 
 export type AppProps = {};
 
@@ -17,7 +17,7 @@ const App: React.FC<AppProps> = props => {
       initialFormValue={initialFormValue}
       //interruptValidation
       onSubmit={x => console.log('submit', x)}>
-      {({ formValue, errors, isSubmiting, submit, reset }) => {
+      {({ formValue, errors, inProcess, submit, reset }) => {
         return (
           <>
             <Field
@@ -38,12 +38,7 @@ const App: React.FC<AppProps> = props => {
                 //console.log('render firstName');
                 return (
                   <div>
-                    <input
-                      ref={nodeRef}
-                      value={value}
-                      disabled={isSubmiting}
-                      onChange={e => onChange(e.target.value)}
-                    />
+                    <input ref={nodeRef} value={value} disabled={inProcess} onChange={e => onChange(e.target.value)} />
                     {error && <div style={{ color: 'red' }}>{error}</div>}
                   </div>
                 );
@@ -58,7 +53,7 @@ const App: React.FC<AppProps> = props => {
                 //console.log('render lastName');
                 return (
                   <div>
-                    <input value={value} disabled={isSubmiting} onChange={e => onChange(e.target.value)} />
+                    <input value={value} disabled={inProcess} onChange={e => onChange(e.target.value)} />
                     {error && <div style={{ color: 'red' }}>{error}</div>}
                   </div>
                 );
@@ -76,7 +71,7 @@ const App: React.FC<AppProps> = props => {
                     <input
                       type='number'
                       value={value}
-                      disabled={isSubmiting}
+                      disabled={inProcess}
                       onChange={e => onChange(Number(e.target.value))}
                     />
                     {error && <div style={{ color: 'red' }}>{error}</div>}
@@ -95,7 +90,7 @@ const App: React.FC<AppProps> = props => {
                   <div>
                     <select
                       value={value ? value.name : ''}
-                      disabled={isSubmiting}
+                      disabled={inProcess}
                       onChange={x => onChange(x.target.value ? { name: x.target.value } : null)}>
                       <option value=''>Empty</option>
                       <option value='programmer'>Programmer</option>
@@ -107,12 +102,13 @@ const App: React.FC<AppProps> = props => {
                 );
               }}
             </Field>
-            <button disabled={isSubmiting} onClick={submit}>
+            <button disabled={inProcess} onClick={submit}>
               Submit
             </button>
-            <button disabled={isSubmiting} onClick={reset}>
+            <button disabled={inProcess} onClick={reset}>
               Reset
             </button>
+            <Debugger />
           </>
         );
       }}

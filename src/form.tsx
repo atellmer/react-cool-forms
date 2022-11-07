@@ -8,7 +8,7 @@ export type FormProps<T extends object = any> = {
   connectedRef?: React.RefObject<FormRef<T>>;
   interruptValidation?: boolean;
   children: (options: FormChildrenOptions<T>) => React.ReactElement;
-  onValidate?: (options: OnValidationOptions<T>) => void;
+  onValidate?: (options: OnValidateOptions<T>) => void;
   onChange?: (options: OnChangeOptions<T>) => void;
   onSubmit: (options: OnSubmitOptions<T>) => void;
 };
@@ -17,7 +17,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const { initialFormValue, connectedRef, interruptValidation, children, onValidate, onChange, onSubmit } = props;
   const [formValue, setFormValue] = useState<T>(clone(initialFormValue));
   const [errors, setErrors] = useState<Record<string, string>>(null);
-  const [isSubmiting, setIsSubmiting] = useState(false);
+  const [inProcess, setInProcess] = useState(false);
 
   const modify = useCallback(
     (formValue: T) => {
@@ -86,10 +86,10 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   );
 
   const submit = useCallback(() => {
-    setIsSubmiting(true);
+    setInProcess(true);
     validate(formValue).then(isValid => {
       isValid && onSubmit({ formValue });
-      setIsSubmiting(false);
+      setInProcess(false);
     });
   }, [formValue]);
 
@@ -109,7 +109,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     () => ({
       formValue,
       errors,
-      isSubmiting,
+      inProcess: inProcess,
       modify,
       validate,
       submit,
@@ -123,7 +123,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
   scope.formValue = formValue;
   scope.errors = errors;
-  scope.isSubmiting = isSubmiting;
+  scope.inProcess = inProcess;
   scope.modify = modify;
   scope.validate = validate;
   scope.submit = submit;
@@ -143,7 +143,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
   return (
     <FormStateContext.Provider value={value}>
-      {children({ formValue, errors, isSubmiting, reset, submit })}
+      {children({ formValue, errors, inProcess, reset, submit })}
     </FormStateContext.Provider>
   );
 }
@@ -181,7 +181,7 @@ export type FormScope<T extends object> = {
   formValue: T;
   errors: Record<string, string> | null;
   validators: Array<SyntheticValidator>;
-  isSubmiting: boolean;
+  inProcess: boolean;
   addValidator: (validator: SyntheticValidator) => void;
   removeValidator: (validator: SyntheticValidator) => void;
 } & Pick<FormRef<T>, 'modify' | 'validate' | 'submit' | 'reset'>;
@@ -194,19 +194,19 @@ type SharedCallbackOptions<T extends object> = {
   formValue: T;
 };
 
-type FormChildrenOptions<T extends object> = {
+export type FormChildrenOptions<T extends object> = {
   errors: Record<string, string>;
-  isSubmiting: boolean;
+  inProcess: boolean;
 } & SharedCallbackOptions<T> &
   Pick<FormRef<T>, 'submit' | 'reset'>;
 
-type OnSubmitOptions<T extends object> = {} & SharedCallbackOptions<T>;
+export type OnSubmitOptions<T extends object> = {} & SharedCallbackOptions<T>;
 
-type OnValidationOptions<T extends object> = {
+export type OnValidateOptions<T extends object> = {
   isValid: boolean;
   errors: Record<string, string> | null;
 } & SharedCallbackOptions<T>;
 
-type OnChangeOptions<T extends object> = {} & SharedCallbackOptions<T>;
+export type OnChangeOptions<T extends object> = {} & SharedCallbackOptions<T>;
 
 export { Form, useFormScope, useFormState };

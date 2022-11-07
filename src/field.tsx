@@ -1,7 +1,7 @@
 import React, { useCallback, memo, useEffect, useMemo, useRef } from 'react';
 
 import { useFormScope } from './form';
-import { type Validator, type SyntheticValidator, type OnValidateOptions } from './validators';
+import { type Validator, type SyntheticValidator, type OnValidateFieldOptions } from './validators';
 
 export type FieldProps<T = unknown, S extends object = any> = {
   name: string;
@@ -10,7 +10,7 @@ export type FieldProps<T = unknown, S extends object = any> = {
   validators?: Array<Validator<T, S>>;
   updatingKey?: string | number;
   children: (options: FieldChildrenOptions<T>) => React.ReactElement;
-  onValidate?: (options: OnValidateOptions) => void;
+  onValidate?: (options: OnValidateFieldOptions) => void;
 };
 
 function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement {
@@ -23,7 +23,7 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
     onValidate,
   } = props;
   const { scope: formScope } = useFormScope<S>();
-  const { formValue, errors, isSubmiting, addValidator, removeValidator } = formScope;
+  const { formValue, errors, inProcess: isSubmiting, addValidator, removeValidator } = formScope;
   const nodeRef = useRef<HTMLElement>(null);
   const value = getValue(formValue);
   const error = errors ? errors[name] || null : null;
@@ -91,14 +91,14 @@ const FieldInner = memo(
   (prevProps, nextProps) => prevProps.updatingKey === nextProps.updatingKey,
 );
 
-type FieldChildrenOptions<T = unknown> = {
+export type FieldChildrenOptions<T = unknown> = {
   value: T;
   error: string | null;
   onChange: (value: T) => void;
-} & Pick<OnValidateOptions, 'nodeRef'>;
+} & Pick<OnValidateFieldOptions, 'nodeRef'>;
 
 let nextValueID = 0;
 
 const getNextValueID = () => ++nextValueID;
 
-export { Field };
+export { Field, type OnValidateFieldOptions };
