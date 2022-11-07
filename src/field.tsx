@@ -1,45 +1,54 @@
-import React, { useCallback, memo, useEffect, useMemo } from 'react';
+import React, { useCallback, memo, useEffect, useMemo, useRef } from 'react';
 
 import { useFormScope } from './form';
-import { type FormValidator, type SyntheticFormValidator } from './validators';
+import { type Validator, type SyntheticValidator, type OnValidateOptions } from './validators';
 
-export type FieldProps<T = any, S extends object = any> = {
+export type FieldProps<T = unknown, S extends object = any> = {
   name: string;
   getValue: (formValue: S) => T;
   setValue: (formValue: S, fieldValue: T) => void;
-  validators?: Array<FormValidator<T, S>>;
+  validators?: Array<Validator<T, S>>;
   updatingKey?: string | number;
   children: (options: FieldChildrenOptions<T>) => React.ReactElement;
+  onValidate?: (options: OnValidateOptions) => void;
 };
 
 function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement {
-  const { name, getValue, setValue, validators = [], updatingKey: externalUpdatingKey = '' } = props;
+  const {
+    name,
+    getValue,
+    setValue,
+    validators: sourceValidators = [],
+    updatingKey: externalUpdatingKey = '',
+    onValidate,
+  } = props;
   const { scope: formScope } = useFormScope<S>();
-  const { formValue, errors, isSubmiting } = formScope;
+  const { formValue, errors, isSubmiting, addValidator, removeValidator } = formScope;
+  const nodeRef = useRef<HTMLElement>(null);
   const value = getValue(formValue);
   const error = errors ? errors[name] || null : null;
   const valueID = useMemo(() => getNextValueID(), [value]);
+  const scope = useMemo(() => ({ nodeRef, onValidate }), []);
   const updatingKey = `${externalUpdatingKey}:${valueID}:${error}:${isSubmiting}`;
 
+  scope.nodeRef = nodeRef;
+  scope.onValidate = onValidate;
+
   useEffect(() => {
-    const syntheticValidators = validators.map(x => {
-      const validator: SyntheticFormValidator = {
-        ...x,
+    const validators: Array<SyntheticValidator> = sourceValidators.map(validator => {
+      return {
+        ...validator,
         name,
         getValue,
+        nodeRef: scope.nodeRef,
+        onValidate: scope.onValidate,
       };
-
-      return validator;
     });
-    formScope.validators.push(...syntheticValidators);
+
+    validators.forEach(x => addValidator(x));
 
     return () => {
-      const [validator] = syntheticValidators;
-      const idx = formScope.validators.findIndex(x => x === validator);
-
-      if (idx !== -1) {
-        formScope.validators.splice(idx, validators.length);
-      }
+      validators.forEach(x => removeValidator(x));
     };
   }, []);
 
@@ -50,8 +59,23 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
     modify(formValue);
   }, []);
 
-  return <FieldInner {...props} updatingKey={updatingKey} value={value} error={error} onChange={handleChange} />;
+  return (
+    <FieldInner
+      {...props}
+      updatingKey={updatingKey}
+      nodeRef={nodeRef}
+      value={value}
+      error={error}
+      onChange={handleChange}
+    />
+  );
 }
+
+const FieldComponent: React.FC<FieldProps> = Field;
+
+FieldComponent.defaultProps = {
+  onValidate: () => {},
+};
 
 export type FieldInnerProps<T = unknown, S extends object = any> = {
   updatingKey: string;
@@ -60,9 +84,9 @@ export type FieldInnerProps<T = unknown, S extends object = any> = {
 
 const FieldInner = memo(
   function <T, S extends object>(props: FieldInnerProps<T, S>): React.ReactElement {
-    const { value, error, children, onChange } = props;
+    const { nodeRef, value, error, children, onChange } = props;
 
-    return children({ value, error, onChange });
+    return children({ nodeRef, value, error, onChange });
   },
   (prevProps, nextProps) => prevProps.updatingKey === nextProps.updatingKey,
 );
@@ -71,7 +95,7 @@ type FieldChildrenOptions<T = unknown> = {
   value: T;
   error: string | null;
   onChange: (value: T) => void;
-};
+} & Pick<OnValidateOptions, 'nodeRef'>;
 
 let nextValueID = 0;
 

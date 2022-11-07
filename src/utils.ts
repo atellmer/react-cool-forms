@@ -7,4 +7,8 @@ function clone<T extends object | Array<any>>(value: T): T {
   return cloned as unknown as T;
 }
 
-export { clone };
+function detecIsFunction(value: unknown): value is Function {
+  return typeof value === 'function';
+}
+
+export { clone, detecIsFunction };

@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useMemo, useState, useImperativeHandle, useCallback } from 'react';
 
-import { clone } from './utils';
-import { type SyntheticFormValidator } from './validators';
+import { clone, detecIsFunction } from './utils';
+import { type SyntheticValidator } from './validators';
 
 export type FormProps<T extends object = any> = {
-  initialValue: T;
+  initialFormValue: T;
   connectedRef?: React.RefObject<FormRef<T>>;
   interruptValidation?: boolean;
   children: (options: FormChildrenOptions<T>) => React.ReactElement;
@@ -14,8 +14,8 @@ export type FormProps<T extends object = any> = {
 };
 
 function Form<T extends object>(props: FormProps<T>): React.ReactElement {
-  const { initialValue, connectedRef, interruptValidation, children, onValidate, onChange, onSubmit } = props;
-  const [formValue, setFormValue] = useState<T>(clone(initialValue));
+  const { initialFormValue, connectedRef, interruptValidation, children, onValidate, onChange, onSubmit } = props;
+  const [formValue, setFormValue] = useState<T>(clone(initialFormValue));
   const [errors, setErrors] = useState<Record<string, string>>(null);
   const [isSubmiting, setIsSubmiting] = useState(false);
 
@@ -31,7 +31,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
   const reset = useCallback(() => {
     setErrors(null);
-    modify(clone(initialValue));
+    modify(clone(initialFormValue));
   }, [onChange]);
 
   const validate = useCallback(
@@ -48,10 +48,14 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
         }
 
         for (const validator of scope.validators) {
-          const value = validator.getValue(formValue);
-          const isValid = await validator.method({ formValue, value });
+          const fieldValue = validator.getValue(formValue);
+          const isValid = await validator.method({ formValue, fieldValue });
 
           validationResults.push(isValid);
+
+          if (detecIsFunction(validator.onValidate)) {
+            validator.onValidate({ isValid, fieldValue, nodeRef: validator.nodeRef });
+          }
 
           if (!isValid) {
             if (!newErrors) {
@@ -89,8 +93,31 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     });
   }, [formValue]);
 
+  const addValidator = useCallback((validator: SyntheticValidator) => {
+    scope.validators.push(validator);
+  }, []);
+
+  const removeValidator = useCallback((validator: SyntheticValidator) => {
+    const idx = scope.validators.findIndex(x => x === validator);
+
+    if (idx !== -1) {
+      scope.validators.splice(idx, 1);
+    }
+  }, []);
+
   const scope = useMemo<FormScope<T>>(
-    () => ({ formValue, errors, isSubmiting, modify, validate, submit, reset, validators: [] }),
+    () => ({
+      formValue,
+      errors,
+      isSubmiting,
+      modify,
+      validate,
+      submit,
+      reset,
+      addValidator,
+      removeValidator,
+      validators: [],
+    }),
     [],
   );
 
@@ -101,6 +128,8 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   scope.validate = validate;
   scope.submit = submit;
   scope.reset = reset;
+  scope.addValidator = addValidator;
+  scope.removeValidator = removeValidator;
 
   const value = useMemo<FormStateContextValue<T>>(() => ({ scope }), [formValue, errors]);
 
@@ -151,8 +180,10 @@ export type FormRef<T extends object> = {
 export type FormScope<T extends object> = {
   formValue: T;
   errors: Record<string, string> | null;
-  validators: Array<SyntheticFormValidator>;
+  validators: Array<SyntheticValidator>;
   isSubmiting: boolean;
+  addValidator: (validator: SyntheticValidator) => void;
+  removeValidator: (validator: SyntheticValidator) => void;
 } & Pick<FormRef<T>, 'modify' | 'validate' | 'submit' | 'reset'>;
 
 type FormStateContextValue<T extends object = any> = {
