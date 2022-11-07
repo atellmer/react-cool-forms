@@ -52,90 +52,86 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   }, [modify]);
 
   const validate = useCallback(
-    (formValue: T): Promise<boolean> => {
+    async (formValue: T): Promise<boolean> => {
       setInProcess(true);
-      return new Promise(async resolve => {
-        let newErrors: Record<string, string> = null;
-        const validationResults: Array<boolean> = [];
-        const validators = scope.validators;
+      let newErrors: Record<string, string> = null;
+      const validationResults: Array<boolean> = [];
+      const validators = scope.validators;
 
-        if (validators.length === 0) {
-          newErrors && setErrors(null);
-          onValidate({ formValue, errors: null, isValid: true });
-
-          resolve(true);
-          setInProcess(false);
-          return;
-        }
-
-        for (const validator of validators) {
-          const fieldValue = validator.getValue(formValue);
-          const isValid = await validator.method({ formValue, fieldValue });
-
-          validationResults.push(isValid);
-
-          if (detecIsFunction(validator.onValidate)) {
-            validator.onValidate({ isValid, fieldValue, nodeRef: validator.nodeRef });
-          }
-
-          if (!isValid) {
-            if (!newErrors) {
-              newErrors = {};
-            }
-            if (!newErrors[validator.name]) {
-              newErrors[validator.name] = validator.message;
-            }
-            if (interruptValidation) {
-              break;
-            }
-          }
-        }
-
-        const isValid = validationResults.every(x => x);
-
-        if (isValid) {
-          errors && setErrors(null);
-        } else {
-          setErrors({ ...newErrors });
-        }
-
-        onValidate({ formValue, errors: newErrors, isValid });
-        resolve(isValid);
+      if (validators.length === 0) {
+        newErrors && setErrors(null);
+        onValidate({ formValue, errors: null, isValid: true });
         setInProcess(false);
-      });
+
+        return true;
+      }
+
+      for (const validator of validators) {
+        const fieldValue = validator.getValue(formValue);
+        const isValid = await validator.method({ formValue, fieldValue });
+
+        validationResults.push(isValid);
+
+        if (detecIsFunction(validator.onValidate)) {
+          validator.onValidate({ isValid, fieldValue, nodeRef: validator.nodeRef });
+        }
+
+        if (!isValid) {
+          if (!newErrors) {
+            newErrors = {};
+          }
+          if (!newErrors[validator.name]) {
+            newErrors[validator.name] = validator.message;
+          }
+          if (interruptValidation) {
+            break;
+          }
+        }
+      }
+
+      const isValid = validationResults.every(x => x);
+
+      if (isValid) {
+        errors && setErrors(null);
+      } else {
+        setErrors({ ...newErrors });
+      }
+
+      onValidate({ formValue, errors: newErrors, isValid });
+      setInProcess(false);
+
+      return isValid;
     },
     [errors, onValidate],
   );
 
   const validateField = useCallback(
-    (options: ValidateFieldOptions<T>): Promise<boolean> => {
-      return new Promise(async resolve => {
-        const { name, formValue, validators } = options;
-        let brokenValidator: SyntheticValidator = null;
+    async (options: ValidateFieldOptions<T>): Promise<boolean> => {
+      const { name, formValue, validators } = options;
+      let brokenValidator: SyntheticValidator = null;
 
-        for (const validator of validators) {
-          const fieldValue = validator.getValue(formValue);
-          const isValid = await validator.method({ formValue, fieldValue });
+      for (const validator of validators) {
+        const fieldValue = validator.getValue(formValue);
+        const isValid = await validator.method({ formValue, fieldValue });
 
-          if (!isValid) {
-            brokenValidator = validator;
-            break;
-          }
+        if (!isValid) {
+          brokenValidator = validator;
+          break;
         }
+      }
 
-        const isValid = !brokenValidator;
+      const isValid = !brokenValidator;
 
-        if (isValid) {
-          if (errors && errors[name]) {
-            delete errors[name];
-            setErrors({ ...errors });
-          }
-        } else {
-          setErrors({ ...errors, [name]: brokenValidator.message });
+      if (isValid) {
+        if (errors && errors[name]) {
+          delete errors[name];
+          setErrors({ ...errors });
         }
+      } else {
+        setErrors({ ...errors, [name]: brokenValidator.message });
+      }
 
-        resolve(isValid);
-      });
+      return isValid;
     },
     [errors],
   );
