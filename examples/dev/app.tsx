@@ -8,7 +8,7 @@ const App: React.FC<AppProps> = props => {
   const initialFormValue: Person = { firstName: 'Alex', lastName: 'Plex', age: 18, position: null };
 
   useEffect(() => {
-    console.log('formRef', formRef);
+    // console.log('formRef', formRef);
   }, []);
 
   return (
@@ -16,7 +16,7 @@ const App: React.FC<AppProps> = props => {
       connectedRef={formRef}
       initialFormValue={initialFormValue}
       //interruptValidation
-      onSubmit={x => console.log('submit', x)}>
+      onSubmit={x => {}}>
       {({ formValue, errors, inProcess, submit, reset }) => {
         return (
           <>

@@ -32,7 +32,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const reset = useCallback(() => {
     setErrors(null);
     modify(clone(initialFormValue));
-  }, [onChange]);
+  }, [modify]);
 
   const validate = useCallback(
     (formValue: T): Promise<boolean> => {
@@ -91,7 +91,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
       isValid && onSubmit({ formValue });
       setInProcess(false);
     });
-  }, [formValue]);
+  }, [formValue, validate, onSubmit]);
 
   const addValidator = useCallback((validator: SyntheticValidator) => {
     scope.validators.push(validator);
