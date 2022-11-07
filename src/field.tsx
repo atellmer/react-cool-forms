@@ -1,6 +1,6 @@
 import React, { useCallback, memo, useEffect, useMemo, useRef } from 'react';
 
-import { useFormScope } from './form';
+import { useFormContext } from './form';
 import { type Validator, type SyntheticValidator, type OnValidateFieldOptions } from './validators';
 
 export type FieldProps<T = unknown, S extends object = any> = {
@@ -24,14 +24,14 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
     enableOnChangeValidation,
     onValidate,
   } = props;
-  const { scope: formScope } = useFormScope<S>();
-  const { formValue, errors, inProcess: isSubmiting, addValidator, removeValidator } = formScope;
+  const { scope: formScope } = useFormContext<S>();
+  const { formValue, errors, inProcess, addValidator, removeValidator } = formScope;
   const nodeRef = useRef<HTMLElement>(null);
   const value = getValue(formValue);
   const error = errors ? errors[name] || null : null;
   const valueID = useMemo(() => getNextValueID(), [value]);
   const scope = useMemo<FieldScope>(() => ({ nodeRef, validators: [], onValidate }), []);
-  const updatingKey = `${externalUpdatingKey}:${valueID}:${error}:${isSubmiting}`;
+  const updatingKey = `${externalUpdatingKey}:${valueID}:${error}:${inProcess}`;
 
   scope.nodeRef = nodeRef;
   scope.onValidate = onValidate;

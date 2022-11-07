@@ -1,11 +1,17 @@
 import React, { useRef, useEffect } from 'react';
-import { Form, Field, Debugger, type FormRef, type Validator } from 'react-cool-forms';
+import { Form, Field, Repeater, Debugger, type FormRef, type Validator } from 'react-cool-forms';
 
 export type AppProps = {};
 
 const App: React.FC<AppProps> = props => {
   const formRef = useRef<FormRef<Person>>(null);
-  const initialFormValue: Person = { firstName: 'Alex', lastName: 'Plex', age: 18, position: null };
+  const initialFormValue: Person = {
+    firstName: 'Alex',
+    lastName: 'Plex',
+    age: 18,
+    position: null,
+    skills: [{ name: 'coding' }, { name: 'learning' }],
+  };
 
   useEffect(() => {
     // console.log('formRef', formRef);
@@ -22,10 +28,10 @@ const App: React.FC<AppProps> = props => {
           <>
             <Field
               name='firstName'
-              getValue={(user: Person) => user.firstName}
-              setValue={(user: Person, value: string) => (user.firstName = value)}
+              getValue={(person: Person) => person.firstName}
+              setValue={(person: Person, value: string) => (person.firstName = value)}
               validators={[required as Validator<string, Person>]}
-              enableOnChangeValidation
+              //enableOnChangeValidation
               onValidate={({ nodeRef, isValid }) => {
                 const node = nodeRef.current as HTMLInputElement;
 
@@ -47,9 +53,9 @@ const App: React.FC<AppProps> = props => {
             </Field>
             <Field
               name='lastName'
-              getValue={(user: Person) => user.lastName}
-              setValue={(user: Person, value: string) => (user.lastName = value)}
-              enableOnChangeValidation
+              getValue={(person: Person) => person.lastName}
+              setValue={(person: Person, value: string) => (person.lastName = value)}
+              //enableOnChangeValidation
               validators={[required as Validator<string, Person>]}>
               {({ value, error, onChange }) => {
                 //console.log('render lastName');
@@ -63,9 +69,9 @@ const App: React.FC<AppProps> = props => {
             </Field>
             <Field
               name='age'
-              getValue={(user: Person) => user.age}
-              setValue={(user: Person, value: number) => (user.age = value)}
-              enableOnChangeValidation
+              getValue={(person: Person) => person.age}
+              setValue={(person: Person, value: number) => (person.age = value)}
+              //enableOnChangeValidation
               validators={[required as Validator<number, Person>, adult]}>
               {({ value, error, onChange }) => {
                 //console.log('render age');
@@ -84,8 +90,9 @@ const App: React.FC<AppProps> = props => {
             </Field>
             <Field
               name='position'
-              getValue={(user: Person) => user.position}
-              setValue={(user: Person, value: Position) => (user.position = value)}
+              getValue={(person: Person) => person.position}
+              setValue={(person: Person, value: Position) => (person.position = value)}
+              //enableOnChangeValidation
               validators={[required as Validator<Position, Person>]}>
               {({ value, error, onChange }) => {
                 //console.log('render position');
@@ -105,6 +112,31 @@ const App: React.FC<AppProps> = props => {
                 );
               }}
             </Field>
+            <Repeater
+              name='skills'
+              getValue={(person: Person) => person.skills}
+              setValue={(person: Person, value: Array<Skill>) => (person.skills = value)}>
+              {({ inProcess }) => {
+                return (
+                  <Field
+                    name='name'
+                    getValue={(skill: Skill) => skill.name}
+                    setValue={(skill: Skill, value: string) => (skill.name = value)}
+                    //enableOnChangeValidation
+                    validators={[required as Validator<string, Skill>]}>
+                    {({ value, error, onChange }) => {
+                      //console.log('render skill', value);
+                      return (
+                        <div>
+                          <input value={value} disabled={inProcess} onChange={e => onChange(e.target.value)} />
+                          {error && <div style={{ color: 'red' }}>{error}</div>}
+                        </div>
+                      );
+                    }}
+                  </Field>
+                );
+              }}
+            </Repeater>
             <button disabled={inProcess} onClick={submit}>
               Submit
             </button>
@@ -119,7 +151,7 @@ const App: React.FC<AppProps> = props => {
   );
 };
 
-const required: Validator<any, Person> = {
+const required: Validator<any, any> = {
   method: ({ fieldValue }) => {
     return new Promise(resolve => {
       resolve(Boolean(fieldValue));
@@ -138,9 +170,14 @@ type Person = {
   lastName: string;
   age: number;
   position: Position;
+  skills: Array<Skill>;
 };
 
 type Position = {
+  name: string;
+};
+
+type Skill = {
   name: string;
 };
 

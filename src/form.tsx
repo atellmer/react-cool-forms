@@ -5,7 +5,7 @@ import { type SyntheticValidator } from './validators';
 
 export type FormProps<T extends object = any> = {
   initialFormValue: T;
-  connectedRef?: React.RefObject<FormRef<T>>;
+  connectedRef?: React.Ref<FormRef<T>>;
   interruptValidation?: boolean;
   children: (options: FormChildrenOptions<T>) => React.ReactElement;
   onValidate?: (options: OnValidateOptions<T>) => void;
@@ -32,10 +32,14 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const reset = useCallback(() => {
     setErrors(null);
     modify(clone(initialFormValue));
+    setTimeout(() => {
+      scope.resetFns.forEach(fn => fn());
+    });
   }, [modify]);
 
   const validate = useCallback(
     (formValue: T): Promise<boolean> => {
+      setInProcess(true);
       return new Promise(async resolve => {
         let newErrors: Record<string, string> = null;
         const validationResults: Array<boolean> = [];
@@ -45,7 +49,9 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
           newErrors && setErrors(null);
           onValidate({ formValue, errors: null, isValid: true });
 
-          return resolve(true);
+          resolve(true);
+          setInProcess(false);
+          return;
         }
 
         for (const validator of validators) {
@@ -81,6 +87,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
         onValidate({ formValue, errors: newErrors, isValid });
         resolve(isValid);
+        setInProcess(false);
       });
     },
     [errors, onValidate],
@@ -120,10 +127,8 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   );
 
   const submit = useCallback(() => {
-    setInProcess(true);
     validate(formValue).then(isValid => {
       isValid && onSubmit({ formValue });
-      setInProcess(false);
     });
   }, [formValue, validate, onSubmit]);
 
@@ -139,11 +144,23 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     }
   }, []);
 
+  const addResetFn = useCallback((fn: () => void) => {
+    scope.resetFns.push(fn);
+  }, []);
+
+  const removeResetFn = useCallback((fn: () => void) => {
+    const idx = scope.resetFns.findIndex(x => x === fn);
+
+    if (idx !== -1) {
+      scope.resetFns.splice(idx, 1);
+    }
+  }, []);
+
   const scope = useMemo<FormScope<T>>(
     () => ({
       formValue,
       errors,
-      inProcess: inProcess,
+      inProcess,
       modify,
       validate,
       validateField,
@@ -151,7 +168,10 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
       reset,
       addValidator,
       removeValidator,
+      addResetFn,
+      removeResetFn,
       validators: [],
+      resetFns: [],
     }),
     [],
   );
@@ -166,6 +186,8 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   scope.reset = reset;
   scope.addValidator = addValidator;
   scope.removeValidator = removeValidator;
+  scope.addResetFn = addResetFn;
+  scope.removeResetFn = removeResetFn;
 
   const value = useMemo<FormStateContextValue<T>>(() => ({ scope }), [formValue, errors]);
 
@@ -193,7 +215,7 @@ FormComponent.defaultProps = {
 
 const FormStateContext = createContext<FormStateContextValue>(null);
 
-function useFormScope<T extends object>() {
+function useFormContext<T extends object>() {
   const value = useContext<FormStateContextValue<T>>(FormStateContext);
 
   return value;
@@ -216,10 +238,13 @@ export type FormRef<T extends object> = {
 export type FormScope<T extends object> = {
   formValue: T;
   errors: Record<string, string> | null;
-  validators: Array<SyntheticValidator>;
   inProcess: boolean;
+  validators: Array<SyntheticValidator>;
+  resetFns: Array<() => void>;
   addValidator: (validator: SyntheticValidator) => void;
   removeValidator: (validator: SyntheticValidator) => void;
+  addResetFn: (fn: () => void) => void;
+  removeResetFn: (fn: () => void) => void;
   validateField: (options: ValidateFieldOptions<T>) => Promise<boolean>;
 } & Pick<FormRef<T>, 'modify' | 'validate' | 'submit' | 'reset'>;
 
@@ -252,4 +277,4 @@ export type OnValidateOptions<T extends object> = {
 
 export type OnChangeOptions<T extends object> = {} & SharedCallbackOptions<T>;
 
-export { Form, useFormScope, useFormState };
+export { Form, useFormContext, useFormState };

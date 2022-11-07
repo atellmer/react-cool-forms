@@ -10,4 +10,5 @@ export {
   type OnChangeOptions,
 } from './form';
 export { Field, type FieldProps, type FieldChildrenOptions, type OnValidateFieldOptions } from './field';
+export { Repeater, type RepeaterProps, type RepeaterChildrenOptions } from './repeater';
 export { Debugger } from './debugger';
