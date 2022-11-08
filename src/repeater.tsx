@@ -4,7 +4,7 @@ import { Form, useFormContext, type OnChangeOptions, type FormRef, type FormChil
 import { detecIsFunction, dummy } from './utils';
 import { type SyntheticValidator } from './validators';
 
-export type RepeaterProps<T extends object, S extends object = any> = {
+export type RepeaterProps<T extends object, S extends object> = {
   name: string;
   getValue: (formValue: S) => Array<T>;
   setValue: (formValue: S, fieldValue: Array<T>) => void;
@@ -190,7 +190,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
   );
 }
 
-const RepeaterComponent: React.FC<RepeaterProps<any, any>> = Repeater;
+const RepeaterComponent: React.FC<RepeaterProps<{}, {}>> = Repeater;
 
 RepeaterComponent.defaultProps = {
   tringgerPosition: 'after',
@@ -213,8 +213,8 @@ export type RenderTriggerOptions<T extends object> = {
   append: (item: T, shouldFocus?: boolean) => void;
   prepend: (item: T, shouldFocus?: boolean) => void;
   insert: (idx: number, item: T, shouldFocus?: boolean) => void;
-  remove: (idx: number | Array<number>) => void;
   swap: (from: number, to: number) => void;
-} & Pick<FormChildrenOptions<T>, 'inProcess'>;
+} & Pick<FormChildrenOptions<T>, 'inProcess'> &
+  Pick<RepeaterChildrenOptions<T>, 'remove'>;
 
 export { Repeater };

@@ -3,7 +3,7 @@ import React, { useCallback, memo, useEffect, useMemo, useRef } from 'react';
 import { useFormContext } from './form';
 import { type Validator, type SyntheticValidator, type OnValidateFieldOptions } from './validators';
 
-export type FieldProps<T = unknown, S extends object = any> = {
+export type FieldProps<T, S extends object> = {
   name: string;
   getValue: (formValue: S) => T;
   setValue: (formValue: S, fieldValue: T) => void;
@@ -11,7 +11,7 @@ export type FieldProps<T = unknown, S extends object = any> = {
   updatingKey?: string | number;
   enableOnChangeValidation?: boolean;
   children: (options: FieldChildrenOptions<T>) => React.ReactElement;
-  onValidate?: (options: OnValidateFieldOptions) => void;
+  onValidate?: (options: OnValidateFieldOptions<T>) => void;
 };
 
 function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement {
@@ -89,7 +89,7 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
   );
 }
 
-const FieldComponent: React.FC<FieldProps> = Field;
+const FieldComponent: React.FC<FieldProps<unknown, {}>> = Field;
 
 FieldComponent.defaultProps = {
   onValidate: () => {},
@@ -98,10 +98,10 @@ FieldComponent.defaultProps = {
 type FieldScope = {
   nodeRef: React.RefObject<any>;
   validators: Array<SyntheticValidator>;
-  onValidate: (options: OnValidateFieldOptions) => void;
+  onValidate: (options: OnValidateFieldOptions<any>) => void;
 };
 
-export type FieldInnerProps<T = unknown, S extends object = any> = {
+export type FieldInnerProps<T, S extends object> = {
   updatingKey: string;
 } & FieldProps<T, S> &
   FieldChildrenOptions<T>;
@@ -115,12 +115,12 @@ const FieldInner = memo(
   (prevProps, nextProps) => prevProps.updatingKey === nextProps.updatingKey,
 );
 
-export type FieldChildrenOptions<T = unknown> = {
+export type FieldChildrenOptions<T> = {
   name: string;
   value: T;
   error: string | null;
   onChange: (value: T) => void;
-} & Pick<OnValidateFieldOptions, 'nodeRef'>;
+} & Pick<OnValidateFieldOptions<T>, 'nodeRef'>;
 
 let nextValueID = 0;
 

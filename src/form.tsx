@@ -11,7 +11,7 @@ import React, {
 import { clone, detecIsFunction, CONTEXT_ERROR } from './utils';
 import { type SyntheticValidator } from './validators';
 
-export type FormProps<T extends object = any> = {
+export type FormProps<T extends object> = {
   initialFormValue: T;
   connectedRef?: React.Ref<FormRef<T>>;
   interruptValidation?: boolean;
@@ -53,18 +53,11 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
   const validate = useCallback(
     async (formValue: T): Promise<boolean> => {
-      setInProcess(true);
       let newErrors: Record<string, string> = null;
       const validationResults: Array<boolean> = [];
       const validators = scope.validators;
 
-      if (validators.length === 0) {
-        newErrors && setErrors(null);
-        onValidate({ formValue, errors: null, isValid: true });
-        setInProcess(false);
-
-        return true;
-      }
+      setInProcess(true);
 
       for (const validator of validators) {
         const fieldValue = validator.getValue(formValue);
@@ -97,8 +90,8 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
         setErrors({ ...newErrors });
       }
 
-      onValidate({ formValue, errors: newErrors, isValid });
       setInProcess(false);
+      onValidate({ formValue, errors: newErrors, isValid });
 
       return isValid;
     },
@@ -216,7 +209,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   );
 }
 
-const FormComponent: React.FC<FormProps> = Form;
+const FormComponent: React.FC<FormProps<{}>> = Form;
 
 FormComponent.defaultProps = {
   onValidate: () => {},
@@ -235,8 +228,8 @@ function useFormContext<T extends object>() {
   return value;
 }
 
-function useFormState() {
-  const { scope } = useFormContext();
+function useFormState<T extends object>() {
+  const { scope } = useFormContext<T>();
 
   return { ...scope };
 }

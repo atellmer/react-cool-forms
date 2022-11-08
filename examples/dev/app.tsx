@@ -174,7 +174,7 @@ const App: React.FC<AppProps> = props => {
   );
 };
 
-const required: Validator<any, any> = {
+const required: Validator = {
   method: ({ fieldValue }) => {
     return new Promise(resolve => {
       resolve(Boolean(fieldValue));

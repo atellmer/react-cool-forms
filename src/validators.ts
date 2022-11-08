@@ -10,14 +10,14 @@ export type SyntheticValidator<T = unknown, S extends object = any> = {
   getValue: (formValue: S) => T;
   onValidate?: (options: OnValidateFieldOptions<T>) => void;
 } & Validator &
-  Partial<Pick<OnValidateFieldOptions, 'nodeRef'>>;
+  Partial<Pick<OnValidateFieldOptions<T>, 'nodeRef'>>;
 
-type ValidatorMethodOptions<T = unknown, S extends object = any> = {
+type ValidatorMethodOptions<T, S extends object> = {
   fieldValue: T;
   formValue: S;
 };
 
-export type OnValidateFieldOptions<T = unknown> = {
+export type OnValidateFieldOptions<T> = {
   nodeRef: RefObject<any> | null;
   isValid: boolean;
   fieldValue: T;
