@@ -108,14 +108,15 @@ export type FieldInnerProps<T = unknown, S extends object = any> = {
 
 const FieldInner = memo(
   function <T, S extends object>(props: FieldInnerProps<T, S>): React.ReactElement {
-    const { nodeRef, value, error, children, onChange } = props;
+    const { name, nodeRef, value, error, children, onChange } = props;
 
-    return children({ nodeRef, value, error, onChange });
+    return children({ name, nodeRef, value, error, onChange });
   },
   (prevProps, nextProps) => prevProps.updatingKey === nextProps.updatingKey,
 );
 
 export type FieldChildrenOptions<T = unknown> = {
+  name: string;
   value: T;
   error: string | null;
   onChange: (value: T) => void;

@@ -120,14 +120,14 @@ const App: React.FC<AppProps> = props => {
               getValue={(person: Person) => person.skills}
               setValue={(person: Person, value: Array<Skill>) => (person.skills = value)}
               getKey={x => x.ID}
-              renderAddTrigger={({ add, inProcess }) => (
+              renderTrigger={({ append, prepend, insert, swap, inProcess }) => (
                 <div>
-                  <button disabled={inProcess} onClick={() => add({ ID: getNextSkillID(), name: '' })}>
+                  <button disabled={inProcess} onClick={() => append({ ID: getNextSkillID(), name: '' }, true)}>
                     add item
                   </button>
                 </div>
               )}>
-              {({ idx, inProcess, isSingle, remove }) => {
+              {({ idx, inProcess, isSingle, shouldFocus, remove }) => {
                 return (
                   <>
                     <Field
@@ -140,7 +140,12 @@ const App: React.FC<AppProps> = props => {
                         //console.log('render skill', value);
                         return (
                           <div>
-                            <input value={value} disabled={inProcess} onChange={e => onChange(e.target.value)} />
+                            <input
+                              autoFocus={shouldFocus}
+                              value={value}
+                              disabled={inProcess}
+                              onChange={e => onChange(e.target.value)}
+                            />
                             {error && <div style={{ color: 'red' }}>{error}</div>}
                           </div>
                         );

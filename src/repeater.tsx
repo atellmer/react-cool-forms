@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 
 import { Form, useFormContext, type OnChangeOptions, type FormRef, type FormChildrenOptions } from './form';
 import { detecIsFunction, dummy } from './utils';
@@ -10,18 +10,18 @@ export type RepeaterProps<T extends object, S extends object = any> = {
   setValue: (formValue: S, fieldValue: Array<T>) => void;
   getKey: (formValue: T) => string | number;
   interruptValidation?: boolean;
-  addTringgerPosition?: 'before' | 'after';
-  renderAddTrigger?: (options: RenderAddTriggerOptions<T>) => React.ReactElement;
+  tringgerPosition?: 'before' | 'after';
+  renderTrigger?: (options: RenderTriggerOptions<T>) => React.ReactElement;
   children: (options: RepeaterChildrenOptions<T>) => React.ReactElement;
 };
 
 function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>): React.ReactElement {
-  const { name, getValue, setValue, getKey, interruptValidation, renderAddTrigger, addTringgerPosition, children } =
-    props;
+  const { name, getValue, setValue, getKey, interruptValidation, renderTrigger, tringgerPosition, children } = props;
   const { scope: formScope } = useFormContext<S>();
   const { formValue, modify, inProcess, addValidator, removeValidator, addResetFn, removeResetFn } = formScope;
   const items = getValue(formValue);
   const formRefs = useRef<Array<FormRef<any>>>([]);
+  const scope = useMemo(() => ({ shouldFocusIdx: -1 }), []);
 
   useEffect(() => {
     const method = async () => {
@@ -69,6 +69,10 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
     return () => removeResetFn(resetFn);
   }, []);
 
+  useEffect(() => {
+    scope.shouldFocusIdx = -1;
+  });
+
   const handleUnmount = (idx: number) => () => {
     formRefs.current.splice(idx, 1);
   };
@@ -83,36 +87,75 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
       modify(formValue);
     };
 
-  const add = (item: T) => {
+  const append = (item: T, shouldFocus?: boolean) => {
     const items = getValue(formValue);
 
     items.push(item);
     setValue(formValue, items);
     modify(formValue);
+    shouldFocus && (scope.shouldFocusIdx = items.length - 1);
   };
 
-  const remove = (idx: number) => {
+  const prepend = (item: T, shouldFocus?: boolean) => {
     const items = getValue(formValue);
 
-    items.splice(idx, 1);
+    items.unshift(item);
+    setValue(formValue, items);
+    modify(formValue);
+    shouldFocus && (scope.shouldFocusIdx = 0);
+  };
+
+  const insert = (idx: number, item: T, shouldFocus?: boolean) => {
+    const items = getValue(formValue);
+
+    items.splice(idx, 0, item);
+    setValue(formValue, items);
+    modify(formValue);
+    shouldFocus && (scope.shouldFocusIdx = idx);
+  };
+
+  const swap = (from: number, to: number) => {
+    const items = getValue(formValue);
+    const itemFrom = items[from];
+    const itemTo = items[to];
+
+    if (!itemFrom || !itemTo) return;
+
+    items[from] = itemTo;
+    items[to] = itemFrom;
     setValue(formValue, items);
     modify(formValue);
   };
 
-  const isAfter = addTringgerPosition === 'after';
+  const remove = (sourceIdx: number | Array<number>) => {
+    const idxs = Array.isArray(sourceIdx) ? sourceIdx : [sourceIdx];
+    const items = getValue(formValue);
+
+    for (const idx of idxs) {
+      items.splice(idx, 1);
+    }
+
+    setValue(formValue, items);
+    modify(formValue);
+  };
+
+  const isAfter = tringgerPosition === 'after';
   const isBefore = !isAfter;
   const isSingle = items.length === 1;
   const size = items.length;
 
   return (
     <>
-      {isBefore && detecIsFunction(renderAddTrigger) && renderAddTrigger({ add, inProcess })}
+      {isBefore &&
+        detecIsFunction(renderTrigger) &&
+        renderTrigger({ size, append, prepend, insert, swap, remove, inProcess })}
       {items.map((item, idx) => {
         const key = getKey(item);
         const isFirst = idx === 0;
         const isLast = idx === items.length - 1;
         const isEven = idx % 2 === 0;
         const isOdd = !isEven;
+        const shouldFocus = scope.shouldFocusIdx === idx;
 
         return (
           <Form
@@ -123,12 +166,26 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
             onUnmount={handleUnmount(idx)}
             onSubmit={dummy}>
             {({ formValue, inProcess }) => {
-              return children({ idx, isFirst, isLast, isEven, isOdd, isSingle, size, formValue, inProcess, remove });
+              return children({
+                idx,
+                isFirst,
+                isLast,
+                isEven,
+                isOdd,
+                isSingle,
+                size,
+                shouldFocus,
+                formValue,
+                inProcess,
+                remove,
+              });
             }}
           </Form>
         );
       })}
-      {isAfter && detecIsFunction(renderAddTrigger) && renderAddTrigger({ add, inProcess })}
+      {isAfter &&
+        detecIsFunction(renderTrigger) &&
+        renderTrigger({ size, append, prepend, insert, swap, remove, inProcess })}
     </>
   );
 }
@@ -136,7 +193,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
 const RepeaterComponent: React.FC<RepeaterProps<any, any>> = Repeater;
 
 RepeaterComponent.defaultProps = {
-  addTringgerPosition: 'after',
+  tringgerPosition: 'after',
 };
 
 export type RepeaterChildrenOptions<T extends object> = {
@@ -147,11 +204,17 @@ export type RepeaterChildrenOptions<T extends object> = {
   isOdd: boolean;
   isSingle: boolean;
   size: number;
-  remove: (idx: number) => void;
+  shouldFocus: boolean;
+  remove: (idx: number | Array<number>) => void;
 } & Pick<FormChildrenOptions<T>, 'formValue' | 'inProcess'>;
 
-export type RenderAddTriggerOptions<T extends object> = {
-  add: (item: T) => void;
+export type RenderTriggerOptions<T extends object> = {
+  size: number;
+  append: (item: T, shouldFocus?: boolean) => void;
+  prepend: (item: T, shouldFocus?: boolean) => void;
+  insert: (idx: number, item: T, shouldFocus?: boolean) => void;
+  remove: (idx: number | Array<number>) => void;
+  swap: (from: number, to: number) => void;
 } & Pick<FormChildrenOptions<T>, 'inProcess'>;
 
 export { Repeater };
