@@ -1,171 +1,99 @@
-import React, { useRef, useEffect } from 'react';
-import { Form, Field, Repeater, Debugger, type FormRef, type Validator } from 'react-cool-forms';
+import React, { useMemo } from 'react';
+import { Form, Field, Repeater, Debugger, type Validator } from 'react-cool-forms';
 
 export type AppProps = {};
 
 const App: React.FC<AppProps> = props => {
-  const formRef = useRef<FormRef<Person>>(null);
-  const initialFormValue: Person = {
-    firstName: 'Alex',
-    lastName: 'Plex',
-    age: 18,
-    position: null,
-    skills: [
-      { ID: 1, name: 'coding' },
-      { ID: 2, name: 'learning' },
-    ],
-  };
-
-  useEffect(() => {
-    // console.log('formRef', formRef);
-  }, []);
+  const initialFormValue: SettingsForm = useMemo(
+    () => ({
+      companies: Array(2)
+        .fill(null)
+        .map((_, idx) =>
+          createCompany(`Company #${idx + 1}`, [createAccount('some account'), createAccount('some account')]),
+        ),
+    }),
+    [],
+  );
 
   return (
-    <Form
-      connectedRef={formRef}
-      initialFormValue={initialFormValue}
-      //interruptValidation
-      onSubmit={x => console.log('submit', x)}>
-      {({ formValue, errors, inProcess, submit, reset }) => {
+    <Form initialFormValue={initialFormValue} onSubmit={x => console.log('submit', x)}>
+      {({ submit, reset }) => {
         return (
           <>
-            <Field
-              name='firstName'
-              getValue={(person: Person) => person.firstName}
-              setValue={(person: Person, value: string) => (person.firstName = value)}
-              validators={[required as Validator<string, Person>]}
-              enableOnChangeValidation
-              onValidate={({ nodeRef, isValid }) => {
-                const node = nodeRef.current as HTMLInputElement;
-
-                !isValid &&
-                  requestAnimationFrame(() => {
-                    node.focus();
-                    node.scrollIntoView(true);
-                  });
-              }}>
-              {({ nodeRef, value, error, onChange }) => {
-                //console.log('render firstName');
-                return (
-                  <div>
-                    <input ref={nodeRef} value={value} disabled={inProcess} onChange={e => onChange(e.target.value)} />
-                    {error && <div style={{ color: 'red' }}>{error}</div>}
-                  </div>
-                );
-              }}
-            </Field>
-            <Field
-              name='lastName'
-              getValue={(person: Person) => person.lastName}
-              setValue={(person: Person, value: string) => (person.lastName = value)}
-              enableOnChangeValidation
-              validators={[required as Validator<string, Person>]}>
-              {({ value, error, onChange }) => {
-                //console.log('render lastName');
-                return (
-                  <div>
-                    <input value={value} disabled={inProcess} onChange={e => onChange(e.target.value)} />
-                    {error && <div style={{ color: 'red' }}>{error}</div>}
-                  </div>
-                );
-              }}
-            </Field>
-            <Field
-              name='age'
-              getValue={(person: Person) => person.age}
-              setValue={(person: Person, value: number) => (person.age = value)}
-              enableOnChangeValidation
-              validators={[required as Validator<number, Person>, adult]}>
-              {({ value, error, onChange }) => {
-                //console.log('render age');
-                return (
-                  <div>
-                    <input
-                      type='number'
-                      value={value}
-                      disabled={inProcess}
-                      onChange={e => onChange(Number(e.target.value))}
-                    />
-                    {error && <div style={{ color: 'red' }}>{error}</div>}
-                  </div>
-                );
-              }}
-            </Field>
-            <Field
-              name='position'
-              getValue={(person: Person) => person.position}
-              setValue={(person: Person, value: Position) => (person.position = value)}
-              enableOnChangeValidation
-              validators={[required as Validator<Position, Person>]}>
-              {({ value, error, onChange }) => {
-                //console.log('render position');
-                return (
-                  <div>
-                    <select
-                      value={value ? value.name : ''}
-                      disabled={inProcess}
-                      onChange={x => onChange(x.target.value ? { name: x.target.value } : null)}>
-                      <option value=''>Empty</option>
-                      <option value='programmer'>Programmer</option>
-                      <option value='manager'>Manager</option>
-                      <option value='actor'>Actor</option>
-                    </select>
-                    {error && <div style={{ color: 'red' }}>{error}</div>}
-                  </div>
-                );
-              }}
-            </Field>
             <Repeater
-              name='skills'
-              getValue={(person: Person) => person.skills}
-              setValue={(person: Person, value: Array<Skill>) => (person.skills = value)}
+              name='companies'
+              getValue={(form: SettingsForm) => form.companies}
+              setValue={(form: SettingsForm, value: Array<Company>) => (form.companies = value)}
               getKey={x => x.ID}
-              renderTrigger={({ append, prepend, insert, swap, inProcess }) => (
+              renderTrigger={({ append }) => (
                 <div>
-                  <button disabled={inProcess} onClick={() => append({ ID: getNextSkillID(), name: '' }, true)}>
-                    add item
-                  </button>
+                  <button onClick={() => append(createCompany(''))}>Add company</button>
                 </div>
               )}>
-              {({ idx, inProcess, isSingle, shouldFocus, remove }) => {
+              {({ idx, remove }) => {
                 return (
-                  <>
+                  <div style={{ padding: 8, backgroundColor: '#eee', borderBottom: '1px solid black' }}>
                     <Field
                       name='name'
-                      getValue={(skill: Skill) => skill.name}
-                      setValue={(skill: Skill, value: string) => (skill.name = value)}
+                      getValue={(company: Company) => company.name}
+                      setValue={(company: Company, value: string) => (company.name = value)}
                       enableOnChangeValidation
-                      validators={[required as Validator<string, Skill>]}>
+                      validators={[required as Validator<string, Company>]}>
                       {({ value, error, onChange }) => {
-                        //console.log('render skill', value);
+                        // console.log('render company name', idx);
                         return (
                           <div>
-                            <input
-                              autoFocus={shouldFocus}
-                              value={value}
-                              disabled={inProcess}
-                              onChange={e => onChange(e.target.value)}
-                            />
+                            <input value={value} onChange={e => onChange(e.target.value)} />
                             {error && <div style={{ color: 'red' }}>{error}</div>}
                           </div>
                         );
                       }}
                     </Field>
-                    <button disabled={isSingle || inProcess} onClick={() => remove(idx)}>
-                      remove item
-                    </button>
-                  </>
+                    <div style={{ padding: 8 }}>
+                      <Repeater
+                        name='accounts'
+                        getValue={(company: Company) => company.accounts}
+                        setValue={(company: Company, value: Array<Account>) => (company.accounts = value)}
+                        getKey={x => x.ID}
+                        renderTrigger={({ append }) => (
+                          <div>
+                            <button onClick={() => append(createAccount(''))}>Add account</button>
+                          </div>
+                        )}>
+                        {({ idx, remove }) => {
+                          return (
+                            <div>
+                              <Field
+                                name='name'
+                                getValue={(account: Account) => account.name}
+                                setValue={(account: Account, value: string) => (account.name = value)}
+                                enableOnChangeValidation
+                                validators={[required as Validator<string, Account>]}>
+                                {({ value, error, onChange }) => {
+                                  // console.log('render account name', idx);
+                                  return (
+                                    <div>
+                                      <input value={value} onChange={e => onChange(e.target.value)} />
+                                      {error && <div style={{ color: 'red' }}>{error}</div>}
+                                    </div>
+                                  );
+                                }}
+                              </Field>
+                              <button onClick={() => remove(idx)}>remove account</button>
+                            </div>
+                          );
+                        }}
+                      </Repeater>
+                    </div>
+                    <button onClick={() => remove(idx)}>remove company</button>
+                  </div>
                 );
               }}
             </Repeater>
             <br />
             <br />
-            <button disabled={inProcess} onClick={submit}>
-              Submit
-            </button>
-            <button disabled={inProcess} onClick={reset}>
-              Reset
-            </button>
+            <button onClick={submit}>Submit</button>
+            <button onClick={reset}>Reset</button>
             <Debugger />
           </>
         );
@@ -175,38 +103,37 @@ const App: React.FC<AppProps> = props => {
 };
 
 const required: Validator = {
-  method: ({ fieldValue }) => {
-    return new Promise(resolve => {
-      resolve(Boolean(fieldValue));
-    });
-  },
+  method: ({ fieldValue }) => Boolean(fieldValue),
   message: 'It is required field',
 };
 
-const adult: Validator<number, Person> = {
-  method: ({ fieldValue }) => fieldValue >= 18,
-  message: 'You must be adult',
+type SettingsForm = {
+  companies: Array<Company>;
 };
 
-type Person = {
-  firstName: string;
-  lastName: string;
-  age: number;
-  position: Position;
-  skills: Array<Skill>;
-};
-
-type Position = {
+type Company = {
+  ID: number;
   name: string;
+  accounts: Array<Account>;
 };
 
-type Skill = {
+type Account = {
   ID: number;
   name: string;
 };
 
-let nextSkillID = 2;
+let nextCompanyID = 0;
+let nextAccountID = 0;
 
-const getNextSkillID = () => ++nextSkillID;
+const getNextCompanyID = () => ++nextCompanyID;
+const getNextAccountID = () => ++nextAccountID;
+
+function createCompany(name: string, accounts: Array<Account> = []): Company {
+  return { ID: getNextCompanyID(), name, accounts };
+}
+
+function createAccount(name: string): Account {
+  return { ID: getNextAccountID(), name };
+}
 
 export { App };

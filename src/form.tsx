@@ -6,6 +6,7 @@ import React, {
   useImperativeHandle,
   useCallback,
   useEffect,
+  memo,
 } from 'react';
 
 import { clone, detecIsFunction, CONTEXT_ERROR } from './utils';
@@ -28,20 +29,20 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const [formValue, setFormValue] = useState<T>(clone(initialFormValue));
   const [errors, setErrors] = useState<Record<string, string>>(null);
   const [inProcess, setInProcess] = useState(false);
+  const rootScope = useMemo(() => ({ onChange }), []);
+
+  rootScope.onChange = onChange;
 
   useEffect(() => {
     return () => detecIsFunction(onUnmount) && onUnmount();
   }, []);
 
-  const modify = useCallback(
-    (formValue: T) => {
-      const newFormValue = { ...formValue };
+  const modify = useCallback((formValue: T) => {
+    const newFormValue = { ...formValue };
 
-      setFormValue(newFormValue);
-      onChange({ formValue: newFormValue });
-    },
-    [onChange],
-  );
+    setFormValue(newFormValue);
+    rootScope.onChange({ formValue: newFormValue });
+  }, []);
 
   const reset = useCallback(() => {
     setErrors(null);
@@ -204,10 +205,28 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
   return (
     <FormStateContext.Provider value={value}>
-      {children({ formValue, errors, inProcess, reset, submit })}
+      <FormInner formValue={formValue} errors={errors} inProcess={inProcess} reset={reset} submit={submit}>
+        {children}
+      </FormInner>
     </FormStateContext.Provider>
   );
 }
+
+type FormInnerProps<T extends object> = {} & Pick<FormProps<T>, 'children'> & FormChildrenOptions<T>;
+
+const FormInner: React.FC<FormInnerProps<{}>> = memo(
+  props => {
+    const { children, formValue, errors, inProcess, reset, submit } = props;
+
+    return children({ formValue, errors, inProcess, reset, submit });
+  },
+  (prevProps, nextProps) =>
+    prevProps.formValue === nextProps.formValue &&
+    prevProps.errors === nextProps.errors &&
+    prevProps.inProcess === nextProps.inProcess &&
+    prevProps.reset === nextProps.reset &&
+    prevProps.submit === nextProps.submit,
+);
 
 const FormComponent: React.FC<FormProps<{}>> = Form;
 
