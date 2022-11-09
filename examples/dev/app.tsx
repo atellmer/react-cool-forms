@@ -25,7 +25,7 @@ const App: React.FC<AppProps> = props => {
               name='name'
               getValue={(form: SettingsForm) => form.name}
               setValue={(form: SettingsForm, value: string) => (form.name = value)}
-              enableOnChangeValidation
+              //enableOnChangeValidation
               validators={[required as Validator<string, SettingsForm>]}>
               {({ value, error, onChange }) => {
                 // console.log('render settings form name');
@@ -48,13 +48,15 @@ const App: React.FC<AppProps> = props => {
                 </div>
               )}>
               {({ idx, remove }) => {
+                const companyIdx = idx;
+
                 return (
                   <div style={{ padding: 8, backgroundColor: '#eee', borderBottom: '1px solid black' }}>
                     <Field
-                      name='companies.name'
+                      name={`companies[${idx}].name`}
                       getValue={(company: Company) => company.name}
                       setValue={(company: Company, value: string) => (company.name = value)}
-                      enableOnChangeValidation
+                      //enableOnChangeValidation
                       validators={[required as Validator<string, Company>]}>
                       {({ value, error, onChange }) => {
                         //console.log('render company name', idx);
@@ -81,10 +83,10 @@ const App: React.FC<AppProps> = props => {
                           return (
                             <div>
                               <Field
-                                name='companies.accounts.name'
+                                name={`companies[${companyIdx}].accounts[${idx}].name`}
                                 getValue={(account: Account) => account.name}
                                 setValue={(account: Account, value: string) => (account.name = value)}
-                                enableOnChangeValidation
+                                //enableOnChangeValidation
                                 validators={[required as Validator<string, Account>]}>
                                 {({ value, error, onChange }) => {
                                   //console.log('render account name', idx);

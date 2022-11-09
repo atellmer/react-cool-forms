@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 
 import { Form, useFormContext, useEvent, type OnChangeOptions, type FormRef, type FormChildrenOptions } from './form';
-import { SOME_REPEATER_VALIDATION_ERROR, detecIsFunction, dummy } from './utils';
+import { HAS_REPEATER_VALIDATION_ERROR, detecIsFunction, dummy } from './utils';
 import { type SyntheticValidator } from './validators';
 
 export type RepeaterProps<T extends object, S extends object> = {
@@ -18,8 +18,7 @@ export type RepeaterProps<T extends object, S extends object> = {
 function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>): React.ReactElement {
   const { name, getValue, setValue, getKey, interruptValidation, renderTrigger, tringgerPosition, children } = props;
   const { scope: formScope } = useFormContext<S>();
-  const { formValue, modify, inProcess, addValidator, removeValidator, addResetFn, removeResetFn, liftErrors } =
-    formScope;
+  const { formValue, modify, inProcess, box, addValidator, removeValidator, addResetFn, removeResetFn } = formScope;
   const items = getValue(formValue);
   const formRefs = useRef<Array<FormRef<any>>>([]);
   const scope = useMemo(() => ({ shouldFocusIdx: -1 }), []);
@@ -30,7 +29,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
       const refs = formRefs.current.filter(Boolean);
 
       for (const ref of refs) {
-        const isValid = await ref.validate(ref.getFormValue());
+        const isValid = await ref.validate(ref.getFormValue(), true);
 
         results.push(isValid);
 
@@ -47,7 +46,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
     const validator: SyntheticValidator = {
       name,
       method,
-      message: SOME_REPEATER_VALIDATION_ERROR,
+      message: HAS_REPEATER_VALIDATION_ERROR,
       getValue: () => null,
     };
 
@@ -163,9 +162,9 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
             key={key}
             connectedRef={ref => (formRefs.current[idx] = ref)}
             initialFormValue={item}
+            box={box}
             onChange={handleChange(idx)}
             onUnmount={handleUnmount(idx)}
-            onLiftErrors={liftErrors}
             onSubmit={dummy}>
             {({ formValue, errors, inProcess }) => {
               return children({

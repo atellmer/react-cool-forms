@@ -1,5 +1,5 @@
 const CONTEXT_ERROR = 'Context of Form not found!';
-const SOME_REPEATER_VALIDATION_ERROR = 'Some repeater validation error';
+const HAS_REPEATER_VALIDATION_ERROR = 'HAS_REPEATER_VALIDATION_ERROR';
 
 function clone<T extends object | Array<any>>(value: T): T {
   const isObject = typeof value === 'object';
@@ -28,4 +28,26 @@ function hasKeys<T extends object>(obj: T): boolean {
   return Object.keys(obj).length > 0;
 }
 
-export { CONTEXT_ERROR, SOME_REPEATER_VALIDATION_ERROR, clone, detecIsFunction, dummy, removePropertyValues, hasKeys };
+function mergeArrayToObject<S, T extends object>(items: Array<T>, exclude?: string) {
+  const obj = {} as Record<string, S>;
+
+  for (const item of items) {
+    for (const key of Object.keys(item)) {
+      if (exclude && item[key] === exclude) continue;
+      obj[key] = item[key];
+    }
+  }
+
+  return obj;
+}
+
+export {
+  CONTEXT_ERROR,
+  HAS_REPEATER_VALIDATION_ERROR,
+  clone,
+  detecIsFunction,
+  dummy,
+  removePropertyValues,
+  hasKeys,
+  mergeArrayToObject,
+};
