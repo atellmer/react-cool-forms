@@ -5,7 +5,7 @@ import { useFormState } from './form';
 export type DebuggerProps = {};
 
 const Debugger: React.FC<DebuggerProps> = () => {
-  const { formValue } = useFormState();
+  const { formValue, errors } = useFormState();
   const style: React.CSSProperties = useMemo(
     () => ({
       display: 'block',
@@ -16,8 +16,20 @@ const Debugger: React.FC<DebuggerProps> = () => {
     }),
     [],
   );
+  const value = useMemo(
+    () =>
+      JSON.stringify(
+        {
+          errors,
+          formValue,
+        },
+        null,
+        2,
+      ),
+    [formValue, errors],
+  );
 
-  return <pre style={style}>{JSON.stringify(formValue, null, 2)}</pre>;
+  return <pre style={style}>{value}</pre>;
 };
 
 export { Debugger };

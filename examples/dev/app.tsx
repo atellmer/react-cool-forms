@@ -17,7 +17,7 @@ const App: React.FC<AppProps> = props => {
 
   return (
     <Form initialFormValue={initialFormValue} onSubmit={x => console.log('submit', x)}>
-      {({ submit, reset }) => {
+      {({ errors, submit, reset }) => {
         return (
           <>
             <Repeater
@@ -40,7 +40,7 @@ const App: React.FC<AppProps> = props => {
                       enableOnChangeValidation
                       validators={[required as Validator<string, Company>]}>
                       {({ value, error, onChange }) => {
-                        // console.log('render company name', idx);
+                        //console.log('render company name', idx);
                         return (
                           <div>
                             <input value={value} onChange={e => onChange(e.target.value)} />
@@ -70,7 +70,7 @@ const App: React.FC<AppProps> = props => {
                                 enableOnChangeValidation
                                 validators={[required as Validator<string, Account>]}>
                                 {({ value, error, onChange }) => {
-                                  // console.log('render account name', idx);
+                                  //console.log('render account name', idx);
                                   return (
                                     <div>
                                       <input value={value} onChange={e => onChange(e.target.value)} />
