@@ -41,120 +41,111 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const [formValue, setFormValue] = useState<T>(clone(initialFormValue));
   const [errors, setErrors] = useState<Record<string, string>>(null);
   const [inProcess, setInProcess] = useState(false);
-  const rootScope = useMemo(() => ({ onChange }), []);
-
-  rootScope.onChange = onChange;
 
   useEffect(() => {
     return () => detecIsFunction(onUnmount) && onUnmount();
   }, []);
 
-  const modify = useCallback((formValue: T) => {
+  const modify = useEvent((formValue: T) => {
     const newFormValue = { ...formValue };
 
     setFormValue(newFormValue);
-    rootScope.onChange({ formValue: newFormValue });
-  }, []);
+    onChange({ formValue: newFormValue });
+  });
 
-  const reset = useCallback(() => {
+  const reset = useEvent(() => {
     setErrors(null);
     modify(clone(initialFormValue));
     setTimeout(() => {
       scope.resetFns.forEach(fn => fn());
     });
-  }, [modify]);
+  });
 
-  const validate = useCallback(
-    async (formValue: T): Promise<boolean> => {
-      let newErrors: Record<string, string> = null;
-      let mergedErrors: Record<string, string> = null;
-      const results: Array<boolean> = [];
-      const validators = scope.validators;
+  const validate = useEvent(async (formValue: T): Promise<boolean> => {
+    let newErrors: Record<string, string> = null;
+    let mergedErrors: Record<string, string> = null;
+    const results: Array<boolean> = [];
+    const validators = scope.validators;
 
-      setInProcess(true);
+    setInProcess(true);
 
-      for (const validator of validators) {
-        const fieldValue = validator.getValue(formValue);
-        const isValid = await validator.method({ formValue, fieldValue });
+    for (const validator of validators) {
+      const fieldValue = validator.getValue(formValue);
+      const isValid = await validator.method({ formValue, fieldValue });
 
-        results.push(isValid);
+      results.push(isValid);
 
-        if (detecIsFunction(validator.onValidate)) {
-          validator.onValidate({ isValid, fieldValue, nodeRef: validator.nodeRef });
-        }
-
-        if (!isValid) {
-          if (!newErrors) {
-            newErrors = {};
-          }
-          if (!newErrors[validator.name]) {
-            newErrors[validator.name] = validator.message;
-          }
-          if (interruptValidation) {
-            break;
-          }
-        }
+      if (detecIsFunction(validator.onValidate)) {
+        validator.onValidate({ isValid, fieldValue, nodeRef: validator.nodeRef });
       }
-
-      const isValid = results.every(x => x);
 
       if (!isValid) {
-        mergedErrors = hasKeys(newErrors) ? newErrors : null;
-      }
-
-      if (mergedErrors !== errors) {
-        setErrors(mergedErrors);
-      }
-
-      setInProcess(false);
-      onValidate({ formValue, errors: mergedErrors, isValid });
-
-      return isValid;
-    },
-    [errors, onValidate],
-  );
-
-  const validateField = useCallback(
-    async (options: ValidateFieldOptions<T>): Promise<boolean> => {
-      const { name, formValue, validators } = options;
-      const liftedErrors: Record<string, string> = {};
-      let newErrors: Record<string, string> = null;
-      let failedValidator: SyntheticValidator = null;
-
-      for (const validator of validators) {
-        const fieldValue = validator.getValue(formValue);
-        const isValid = await validator.method({ formValue, fieldValue });
-
-        liftedErrors[validator.name] = undefined;
-
-        if (!isValid) {
-          failedValidator = validator;
-          newErrors = { [name]: failedValidator.message };
-          liftedErrors[validator.name] = failedValidator.message;
+        if (!newErrors) {
+          newErrors = {};
+        }
+        if (!newErrors[validator.name]) {
+          newErrors[validator.name] = validator.message;
+        }
+        if (interruptValidation) {
           break;
         }
       }
+    }
 
-      const isValid = !failedValidator;
+    const isValid = results.every(x => x);
 
-      if (isValid) {
-        if (errors && errors[name]) {
-          delete errors[name];
-          newErrors = { ...errors };
-        }
+    if (!isValid) {
+      mergedErrors = hasKeys(newErrors) ? newErrors : null;
+    }
+
+    if (mergedErrors !== errors) {
+      setErrors(mergedErrors);
+    }
+
+    setInProcess(false);
+    onValidate({ formValue, errors: mergedErrors, isValid });
+
+    return isValid;
+  });
+
+  const validateField = useEvent(async (options: ValidateFieldOptions<T>): Promise<boolean> => {
+    const { name, formValue, validators } = options;
+    const liftedErrors: Record<string, string> = {};
+    let newErrors: Record<string, string> = null;
+    let failedValidator: SyntheticValidator = null;
+
+    for (const validator of validators) {
+      const fieldValue = validator.getValue(formValue);
+      const isValid = await validator.method({ formValue, fieldValue });
+
+      liftedErrors[validator.name] = undefined;
+
+      if (!isValid) {
+        failedValidator = validator;
+        newErrors = { [name]: failedValidator.message };
+        liftedErrors[validator.name] = failedValidator.message;
+        break;
       }
+    }
 
-      if (newErrors !== errors) {
-        setErrors(newErrors);
-        liftErrors(liftedErrors);
+    const isValid = !failedValidator;
+
+    if (isValid) {
+      if (errors && errors[name]) {
+        delete errors[name];
+        newErrors = { ...errors };
       }
+    }
 
-      onValidate({ formValue, errors: newErrors, isValid });
+    if (newErrors !== errors) {
+      setErrors(newErrors);
+      liftErrors(liftedErrors);
+    }
 
-      return isValid;
-    },
-    [errors, onValidate],
-  );
+    onValidate({ formValue, errors: newErrors, isValid });
+
+    return isValid;
+  });
 
   const liftErrors = (errors: Record<string, string>) => {
     if (detecIsFunction(onLiftErrors)) {
@@ -178,35 +169,35 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     }
   };
 
-  const submit = useCallback(async () => {
+  const submit = useEvent(async () => {
     const isValid = await validate(formValue);
 
     isValid && onSubmit({ formValue });
-  }, [formValue, validate, onSubmit]);
+  });
 
-  const addValidator = useCallback((validator: SyntheticValidator) => {
+  const addValidator = useEvent((validator: SyntheticValidator) => {
     scope.validators.push(validator);
-  }, []);
+  });
 
-  const removeValidator = useCallback((validator: SyntheticValidator) => {
+  const removeValidator = useEvent((validator: SyntheticValidator) => {
     const idx = scope.validators.findIndex(x => x === validator);
 
     if (idx !== -1) {
       scope.validators.splice(idx, 1);
     }
-  }, []);
+  });
 
-  const addResetFn = useCallback((fn: () => void) => {
+  const addResetFn = useEvent((fn: () => void) => {
     scope.resetFns.push(fn);
-  }, []);
+  });
 
-  const removeResetFn = useCallback((fn: () => void) => {
+  const removeResetFn = useEvent((fn: () => void) => {
     const idx = scope.resetFns.findIndex(x => x === fn);
 
     if (idx !== -1) {
       scope.resetFns.splice(idx, 1);
     }
-  }, []);
+  });
 
   const scope = useMemo<FormScope<T>>(
     () => ({
@@ -303,6 +294,18 @@ function useFormState<T extends object>() {
   return { ...scope };
 }
 
+function useEvent<T extends (...args) => any>(fn: T) {
+  const scope = useMemo(() => ({ fn }), []);
+
+  scope.fn = fn;
+
+  const callback = useCallback((...args) => {
+    return scope.fn(...args);
+  }, []);
+
+  return callback as unknown as T;
+}
+
 export type FormRef<T extends object> = {
   getFormValue: () => T;
   modify: (formValue: T) => void;
@@ -354,4 +357,4 @@ export type OnValidateOptions<T extends object> = {
 
 export type OnChangeOptions<T extends object> = {} & SharedCallbackOptions<T>;
 
-export { Form, useFormContext, useFormState };
+export { Form, useFormContext, useFormState, useEvent };

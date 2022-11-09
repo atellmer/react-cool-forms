@@ -1,6 +1,6 @@
-import React, { useCallback, memo, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef } from 'react';
 
-import { useFormContext } from './form';
+import { useFormContext, useEvent } from './form';
 import { type Validator, type SyntheticValidator, type OnValidateFieldOptions } from './validators';
 
 export type FieldProps<T, S extends object> = {
@@ -60,22 +60,19 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
     };
   }, []);
 
-  const handleChange = useCallback(
-    (value: T) => {
-      const { formValue, modify, validateField } = formScope;
-      const validators = scope.validators;
+  const handleChange = useEvent((value: T) => {
+    const { formValue, modify, validateField } = formScope;
+    const validators = scope.validators;
 
-      setValue(formValue, value);
-      modify(formValue);
+    setValue(formValue, value);
+    modify(formValue);
 
-      if (enableOnChangeValidation && validators.length > 0) {
-        (async () => {
-          await validateField({ name, formValue, validators });
-        })();
-      }
-    },
-    [name, enableOnChangeValidation],
-  );
+    if (enableOnChangeValidation && validators.length > 0) {
+      (async () => {
+        await validateField({ name, formValue, validators });
+      })();
+    }
+  });
 
   return (
     <FieldInner

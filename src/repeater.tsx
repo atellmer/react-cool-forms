@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 
-import { Form, useFormContext, type OnChangeOptions, type FormRef, type FormChildrenOptions } from './form';
+import { Form, useFormContext, useEvent, type OnChangeOptions, type FormRef, type FormChildrenOptions } from './form';
 import { SOME_REPEATER_VALIDATION_ERROR, detecIsFunction, dummy } from './utils';
 import { type SyntheticValidator } from './validators';
 
@@ -88,34 +88,34 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
       modify(formValue);
     };
 
-  const append = (item: T, shouldFocus?: boolean) => {
+  const append = useEvent((item: T, shouldFocus?: boolean) => {
     const items = getValue(formValue);
 
     items.push(item);
     setValue(formValue, items);
     modify(formValue);
     shouldFocus && (scope.shouldFocusIdx = items.length - 1);
-  };
+  });
 
-  const prepend = (item: T, shouldFocus?: boolean) => {
+  const prepend = useEvent((item: T, shouldFocus?: boolean) => {
     const items = getValue(formValue);
 
     items.unshift(item);
     setValue(formValue, items);
     modify(formValue);
     shouldFocus && (scope.shouldFocusIdx = 0);
-  };
+  });
 
-  const insert = (idx: number, item: T, shouldFocus?: boolean) => {
+  const insert = useEvent((idx: number, item: T, shouldFocus?: boolean) => {
     const items = getValue(formValue);
 
     items.splice(idx, 0, item);
     setValue(formValue, items);
     modify(formValue);
     shouldFocus && (scope.shouldFocusIdx = idx);
-  };
+  });
 
-  const swap = (from: number, to: number) => {
+  const swap = useEvent((from: number, to: number) => {
     const items = getValue(formValue);
     const itemFrom = items[from];
     const itemTo = items[to];
@@ -126,9 +126,9 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
     items[to] = itemFrom;
     setValue(formValue, items);
     modify(formValue);
-  };
+  });
 
-  const remove = (sourceIdx: number | Array<number>) => {
+  const remove = useEvent((sourceIdx: number | Array<number>) => {
     const idxs = Array.isArray(sourceIdx) ? sourceIdx : [sourceIdx];
     const items = getValue(formValue);
 
@@ -138,7 +138,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
 
     setValue(formValue, items);
     modify(formValue);
-  };
+  });
 
   const isAfter = tringgerPosition === 'after';
   const isBefore = !isAfter;
