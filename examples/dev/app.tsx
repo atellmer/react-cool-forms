@@ -17,7 +17,7 @@ const App: React.FC<AppProps> = props => {
   );
 
   return (
-    <Form initialFormValue={initialFormValue} onSubmit={x => console.log('submit', x)}>
+    <Form name='settingsForm' initialFormValue={initialFormValue} onSubmit={x => console.log('submit', x)}>
       {({ errors, submit, reset }) => {
         return (
           <>
