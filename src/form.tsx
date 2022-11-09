@@ -241,28 +241,10 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
   return (
     <FormStateContext.Provider value={value}>
-      <FormInner formValue={formValue} errors={errors} inProcess={inProcess} reset={reset} submit={submit}>
-        {children}
-      </FormInner>
+      {children({ formValue, errors, inProcess, validate, reset, submit })}
     </FormStateContext.Provider>
   );
 }
-
-type FormInnerProps<T extends object> = {} & Pick<FormProps<T>, 'children'> & FormChildrenOptions<T>;
-
-const FormInner: React.FC<FormInnerProps<{}>> = memo(
-  props => {
-    const { children, formValue, errors, inProcess, reset, submit } = props;
-
-    return children({ formValue, errors, inProcess, reset, submit });
-  },
-  (prevProps, nextProps) =>
-    prevProps.formValue === nextProps.formValue &&
-    prevProps.errors === nextProps.errors &&
-    prevProps.inProcess === nextProps.inProcess &&
-    prevProps.reset === nextProps.reset &&
-    prevProps.submit === nextProps.submit,
-);
 
 const FormComponent: React.FC<FormProps<{}>> = Form;
 
@@ -341,7 +323,7 @@ export type FormChildrenOptions<T extends object> = {
   errors: Record<string, string>;
   inProcess: boolean;
 } & SharedCallbackOptions<T> &
-  Pick<FormRef<T>, 'submit' | 'reset'>;
+  Pick<FormRef<T>, 'validate' | 'submit' | 'reset'>;
 
 export type OnSubmitOptions<T extends object> = {} & SharedCallbackOptions<T>;
 

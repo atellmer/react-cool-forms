@@ -1,123 +1,153 @@
-import React, { useMemo } from 'react';
-import { Form, Field, Repeater, Debugger, type Validator } from 'react-cool-forms';
+import React, { useMemo, useState } from 'react';
+import { Form, Field, Debugger, type Validator } from 'react-cool-forms';
 
 export type AppProps = {};
 
 const App: React.FC<AppProps> = props => {
-  const initialFormValue: SettingsForm = useMemo(
+  const [step, setStep] = useState('step1');
+  const initialFormValue: WizardForm = useMemo(
     () => ({
-      name: 'xxx',
-      companies: Array(2)
-        .fill(null)
-        .map((_, idx) =>
-          createCompany(`Company #${idx + 1}`, [createAccount('some account'), createAccount('some account')]),
-        ),
+      step1: {
+        firstName: '',
+        lastName: '',
+      },
+      step2: {
+        age: 0,
+        hobby: '',
+      },
+      step3: {
+        nickname: '',
+      },
     }),
     [],
   );
 
-  return (
-    <Form name='settingsForm' initialFormValue={initialFormValue} onSubmit={x => console.log('submit', x)}>
-      {({ errors, submit, reset }) => {
-        return (
-          <>
-            <Field
-              name='name'
-              getValue={(form: SettingsForm) => form.name}
-              setValue={(form: SettingsForm, value: string) => (form.name = value)}
-              //enableOnChangeValidation
-              validators={[required as Validator<string, SettingsForm>]}>
-              {({ value, error, onChange }) => {
-                // console.log('render settings form name');
-                return (
-                  <div>
-                    <input value={value} onChange={e => onChange(e.target.value)} />
-                    {error && <div style={{ color: 'red' }}>{error}</div>}
-                  </div>
-                );
-              }}
-            </Field>
-            <Repeater
-              name='companies'
-              getValue={(form: SettingsForm) => form.companies}
-              setValue={(form: SettingsForm, value: Array<Company>) => (form.companies = value)}
-              getKey={x => x.ID}
-              renderTrigger={({ append }) => (
-                <div>
-                  <button onClick={() => append(createCompany(''))}>Add company</button>
-                </div>
-              )}>
-              {({ idx, remove }) => {
-                const companyIdx = idx;
+  const getPrevStep = (step: string) => {
+    if (step === 'step3') return 'step2';
 
-                return (
-                  <div style={{ padding: 8, backgroundColor: '#eee', borderBottom: '1px solid black' }}>
-                    <Field
-                      name={`companies[${idx}].name`}
-                      getValue={(company: Company) => company.name}
-                      setValue={(company: Company, value: string) => (company.name = value)}
-                      //enableOnChangeValidation
-                      validators={[required as Validator<string, Company>]}>
-                      {({ value, error, onChange }) => {
-                        //console.log('render company name', idx);
-                        return (
-                          <div>
-                            <input value={value} onChange={e => onChange(e.target.value)} />
-                            {error && <div style={{ color: 'red' }}>{error}</div>}
-                          </div>
-                        );
-                      }}
-                    </Field>
-                    <div style={{ padding: 8 }}>
-                      <Repeater
-                        name='companies.accounts'
-                        getValue={(company: Company) => company.accounts}
-                        setValue={(company: Company, value: Array<Account>) => (company.accounts = value)}
-                        getKey={x => x.ID}
-                        renderTrigger={({ append }) => (
-                          <div>
-                            <button onClick={() => append(createAccount(''))}>Add account</button>
-                          </div>
-                        )}>
-                        {({ idx, remove }) => {
-                          return (
-                            <div>
-                              <Field
-                                name={`companies[${companyIdx}].accounts[${idx}].name`}
-                                getValue={(account: Account) => account.name}
-                                setValue={(account: Account, value: string) => (account.name = value)}
-                                //enableOnChangeValidation
-                                validators={[required as Validator<string, Account>]}>
-                                {({ value, error, onChange }) => {
-                                  //console.log('render account name', idx);
-                                  return (
-                                    <div>
-                                      <input value={value} onChange={e => onChange(e.target.value)} />
-                                      {error && <div style={{ color: 'red' }}>{error}</div>}
-                                    </div>
-                                  );
-                                }}
-                              </Field>
-                              <button onClick={() => remove(idx)}>remove account</button>
-                            </div>
-                          );
-                        }}
-                      </Repeater>
-                    </div>
-                    <button onClick={() => remove(idx)}>remove company</button>
-                  </div>
-                );
-              }}
-            </Repeater>
-            <br />
-            <br />
-            <button onClick={submit}>Submit</button>
-            <button onClick={reset}>Reset</button>
+    return 'step1';
+  };
+
+  const getNextStep = (step: string) => {
+    if (step === 'step1') return 'step2';
+
+    return 'step3';
+  };
+
+  const handleNextStep = (formValue, validate) => async () => {
+    const isValid = await validate(formValue);
+
+    isValid && setStep(getNextStep(step));
+  };
+
+  return (
+    <Form initialFormValue={initialFormValue} onSubmit={x => console.log('submit', x)}>
+      {({ formValue, validate, submit }) => {
+        const map = {
+          step1: () => {
+            return (
+              <div key='1'>
+                <Field
+                  name='firstName'
+                  getValue={(form: WizardForm) => form.step1.firstName}
+                  setValue={(form: WizardForm, value: string) => (form.step1.firstName = value)}
+                  validators={[required as Validator<string, WizardForm>]}>
+                  {({ name, value, error, onChange }) => {
+                    return <TextField label={name} value={value} error={error} onChange={onChange} />;
+                  }}
+                </Field>
+                <Field
+                  name='lastName'
+                  getValue={(form: WizardForm) => form.step1.lastName}
+                  setValue={(form: WizardForm, value: string) => (form.step1.lastName = value)}
+                  validators={[required as Validator<string, WizardForm>]}>
+                  {({ name, value, error, onChange }) => {
+                    return <TextField label={name} value={value} error={error} onChange={onChange} />;
+                  }}
+                </Field>
+              </div>
+            );
+          },
+          step2: () => {
+            return (
+              <div key='2'>
+                <Field
+                  name='age'
+                  getValue={(form: WizardForm) => form.step2.age}
+                  setValue={(form: WizardForm, value: number) => (form.step2.age = value)}
+                  validators={[required as Validator<number, WizardForm>]}>
+                  {({ name, value, error, onChange }) => {
+                    return <TextField label={name} type='number' value={value} error={error} onChange={onChange} />;
+                  }}
+                </Field>
+                <Field
+                  name='hobby'
+                  getValue={(form: WizardForm) => form.step2.hobby}
+                  setValue={(form: WizardForm, value: string) => (form.step2.hobby = value)}
+                  validators={[required as Validator<string, WizardForm>]}>
+                  {({ name, value, error, onChange }) => {
+                    return <TextField label={name} value={value} error={error} onChange={onChange} />;
+                  }}
+                </Field>
+              </div>
+            );
+          },
+          step3: () => {
+            return (
+              <div key='3'>
+                <Field
+                  name='nickname'
+                  getValue={(form: WizardForm) => form.step3.nickname}
+                  setValue={(form: WizardForm, value: string) => (form.step3.nickname = value)}
+                  validators={[required as Validator<string, WizardForm>]}>
+                  {({ name, value, error, onChange }) => {
+                    return <TextField label={name} value={value} error={error} onChange={onChange} />;
+                  }}
+                </Field>
+              </div>
+            );
+          },
+        };
+
+        return (
+          <div style={{ padding: 16 }}>
+            <div>{map[step]()}</div>
+            <div>{step}</div>
+            <div>
+              <button disabled={step === 'step1'} onClick={() => setStep(getPrevStep(step))}>
+                Prev step
+              </button>
+              <button onClick={step === 'step3' ? submit : handleNextStep(formValue, validate)}>
+                {step === 'step3' ? 'Submit' : 'Next step'}
+              </button>
+            </div>
             <Debugger />
-          </>
+          </div>
         );
       }}
     </Form>
+  );
+};
+
+type TextFieldProps = {
+  label: string;
+  type?: 'text' | 'number';
+  value: string | number;
+  error?: string;
+  onChange: (value: string | number) => void;
+};
+
+const TextField: React.FC<TextFieldProps> = ({ label, type = 'text', value, error, onChange }) => {
+  return (
+    <label>
+      <div>{label}</div>
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)}
+      />
+      {error && <div style={{ color: 'red' }}>{error}</div>}
+    </label>
   );
 };
 
@@ -126,34 +156,18 @@ const required: Validator = {
   message: 'It is required field',
 };
 
-type SettingsForm = {
-  name: string;
-  companies: Array<Company>;
+type WizardForm = {
+  step1: {
+    firstName: string;
+    lastName: string;
+  };
+  step2: {
+    age: number;
+    hobby: string;
+  };
+  step3: {
+    nickname: string;
+  };
 };
-
-type Company = {
-  ID: number;
-  name: string;
-  accounts: Array<Account>;
-};
-
-type Account = {
-  ID: number;
-  name: string;
-};
-
-let nextCompanyID = 0;
-let nextAccountID = 0;
-
-const getNextCompanyID = () => ++nextCompanyID;
-const getNextAccountID = () => ++nextAccountID;
-
-function createCompany(name: string, accounts: Array<Account> = []): Company {
-  return { ID: getNextCompanyID(), name, accounts };
-}
-
-function createAccount(name: string): Account {
-  return { ID: getNextAccountID(), name };
-}
 
 export { App };
