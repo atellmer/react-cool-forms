@@ -1,3 +1,6 @@
+const CONTEXT_ERROR = 'Context of Form not found!';
+const SOME_REPEATER_VALIDATION_ERROR = 'Some repeater validation error';
+
 function clone<T extends object | Array<any>>(value: T): T {
   const isObject = typeof value === 'object';
   const cloned = isObject ? (Array.isArray(value) ? [...value] : value ? { ...value } : value) : value;
@@ -13,6 +16,16 @@ function detecIsFunction(value: unknown): value is Function {
 
 function dummy() {}
 
-const CONTEXT_ERROR = 'Context of Form not found!';
+function removePropertyValues<T extends object>(obj: T, value: any) {
+  Object.keys(obj).forEach(key => {
+    if (obj[key] === value) {
+      delete obj[key];
+    }
+  });
+}
 
-export { clone, detecIsFunction, dummy, CONTEXT_ERROR };
+function hasKeys<T extends object>(obj: T): boolean {
+  return Object.keys(obj).length > 0;
+}
+
+export { CONTEXT_ERROR, SOME_REPEATER_VALIDATION_ERROR, clone, detecIsFunction, dummy, removePropertyValues, hasKeys };

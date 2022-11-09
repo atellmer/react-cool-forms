@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 
 import { Form, useFormContext, type OnChangeOptions, type FormRef, type FormChildrenOptions } from './form';
-import { detecIsFunction, dummy } from './utils';
+import { SOME_REPEATER_VALIDATION_ERROR, detecIsFunction, dummy } from './utils';
 import { type SyntheticValidator } from './validators';
 
 export type RepeaterProps<T extends object, S extends object> = {
@@ -44,9 +44,9 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
     };
 
     const validator: SyntheticValidator = {
-      method,
-      message: '',
       name,
+      method,
+      message: SOME_REPEATER_VALIDATION_ERROR,
       getValue: () => null,
     };
 
@@ -165,7 +165,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
             onChange={handleChange(idx)}
             onUnmount={handleUnmount(idx)}
             onSubmit={dummy}>
-            {({ formValue, inProcess }) => {
+            {({ formValue, errors, inProcess }) => {
               return children({
                 idx,
                 isFirst,
@@ -176,6 +176,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
                 size,
                 shouldFocus,
                 formValue,
+                errors,
                 inProcess,
                 remove,
               });
@@ -206,7 +207,7 @@ export type RepeaterChildrenOptions<T extends object> = {
   size: number;
   shouldFocus: boolean;
   remove: (idx: number | Array<number>) => void;
-} & Pick<FormChildrenOptions<T>, 'formValue' | 'inProcess'>;
+} & Pick<FormChildrenOptions<T>, 'formValue' | 'errors' | 'inProcess'>;
 
 export type RenderTriggerOptions<T extends object> = {
   size: number;

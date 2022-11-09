@@ -6,6 +6,7 @@ export type AppProps = {};
 const App: React.FC<AppProps> = props => {
   const initialFormValue: SettingsForm = useMemo(
     () => ({
+      name: 'xxx',
       companies: Array(2)
         .fill(null)
         .map((_, idx) =>
@@ -20,6 +21,22 @@ const App: React.FC<AppProps> = props => {
       {({ errors, submit, reset }) => {
         return (
           <>
+            <Field
+              name='name'
+              getValue={(form: SettingsForm) => form.name}
+              setValue={(form: SettingsForm, value: string) => (form.name = value)}
+              enableOnChangeValidation
+              validators={[required as Validator<string, SettingsForm>]}>
+              {({ value, error, onChange }) => {
+                // console.log('render settings form name');
+                return (
+                  <div>
+                    <input value={value} onChange={e => onChange(e.target.value)} />
+                    {error && <div style={{ color: 'red' }}>{error}</div>}
+                  </div>
+                );
+              }}
+            </Field>
             <Repeater
               name='companies'
               getValue={(form: SettingsForm) => form.companies}
@@ -34,7 +51,7 @@ const App: React.FC<AppProps> = props => {
                 return (
                   <div style={{ padding: 8, backgroundColor: '#eee', borderBottom: '1px solid black' }}>
                     <Field
-                      name='name'
+                      name='companies.name'
                       getValue={(company: Company) => company.name}
                       setValue={(company: Company, value: string) => (company.name = value)}
                       enableOnChangeValidation
@@ -51,7 +68,7 @@ const App: React.FC<AppProps> = props => {
                     </Field>
                     <div style={{ padding: 8 }}>
                       <Repeater
-                        name='accounts'
+                        name='companies.accounts'
                         getValue={(company: Company) => company.accounts}
                         setValue={(company: Company, value: Array<Account>) => (company.accounts = value)}
                         getKey={x => x.ID}
@@ -64,7 +81,7 @@ const App: React.FC<AppProps> = props => {
                           return (
                             <div>
                               <Field
-                                name='name'
+                                name='companies.accounts.name'
                                 getValue={(account: Account) => account.name}
                                 setValue={(account: Account, value: string) => (account.name = value)}
                                 enableOnChangeValidation
@@ -108,6 +125,7 @@ const required: Validator = {
 };
 
 type SettingsForm = {
+  name: string;
   companies: Array<Company>;
 };
 

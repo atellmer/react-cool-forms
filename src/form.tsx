@@ -9,7 +9,7 @@ import React, {
   memo,
 } from 'react';
 
-import { clone, detecIsFunction, CONTEXT_ERROR } from './utils';
+import { CONTEXT_ERROR, clone, detecIsFunction, hasKeys } from './utils';
 import { type SyntheticValidator } from './validators';
 
 export type FormProps<T extends object> = {
@@ -24,7 +24,7 @@ export type FormProps<T extends object> = {
 };
 
 function Form<T extends object>(props: FormProps<T>): React.ReactElement {
-  const { initialFormValue, connectedRef, interruptValidation, children, onValidate, onChange, onSubmit, onUnmount } =
+  const { initialFormValue, connectedRef, interruptValidation, children, onValidate, onChange, onUnmount, onSubmit } =
     props;
   const [formValue, setFormValue] = useState<T>(clone(initialFormValue));
   const [errors, setErrors] = useState<Record<string, string>>(null);
@@ -55,6 +55,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const validate = useCallback(
     async (formValue: T): Promise<boolean> => {
       let newErrors: Record<string, string> = null;
+      let mergedErrors: Record<string, string> = null;
       const validationResults: Array<boolean> = [];
       const validators = scope.validators;
 
@@ -85,14 +86,16 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
       const isValid = validationResults.every(x => x);
 
-      if (isValid) {
-        errors && setErrors(null);
-      } else {
-        setErrors({ ...newErrors });
+      if (!isValid) {
+        mergedErrors = hasKeys(newErrors) ? newErrors : null;
+      }
+
+      if (mergedErrors !== errors) {
+        setErrors(mergedErrors);
       }
 
       setInProcess(false);
-      onValidate({ formValue, errors: newErrors, isValid });
+      onValidate({ formValue, errors: mergedErrors, isValid });
 
       return isValid;
     },
@@ -102,6 +105,8 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const validateField = useCallback(
     async (options: ValidateFieldOptions<T>): Promise<boolean> => {
       const { name, formValue, validators } = options;
+      let newErrors: Record<string, string> = null;
+      let mergedErrors: Record<string, string> = null;
       let brokenValidator: SyntheticValidator = null;
 
       for (const validator of validators) {
@@ -110,6 +115,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
         if (!isValid) {
           brokenValidator = validator;
+          newErrors = { [name]: brokenValidator.message };
           break;
         }
       }
@@ -119,21 +125,27 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
       if (isValid) {
         if (errors && errors[name]) {
           delete errors[name];
-          setErrors({ ...errors });
+          mergedErrors = hasKeys(errors) ? { ...errors } : null;
         }
       } else {
-        setErrors({ ...errors, [name]: brokenValidator.message });
+        mergedErrors = { ...(errors || {}), ...newErrors };
       }
+
+      if (mergedErrors !== errors) {
+        setErrors(mergedErrors);
+      }
+
+      onValidate({ formValue, errors: mergedErrors, isValid });
 
       return isValid;
     },
-    [errors],
+    [errors, onValidate],
   );
 
-  const submit = useCallback(() => {
-    validate(formValue).then(isValid => {
-      isValid && onSubmit({ formValue });
-    });
+  const submit = useCallback(async () => {
+    const isValid = await validate(formValue);
+
+    isValid && onSubmit({ formValue });
   }, [formValue, validate, onSubmit]);
 
   const addValidator = useCallback((validator: SyntheticValidator) => {
