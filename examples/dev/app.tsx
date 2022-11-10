@@ -84,7 +84,7 @@ const App: React.FC<AppProps> = props => {
                         );
                       }}
                     </Field>
-                    {/* <div style={{ padding: 8 }}>
+                    <div style={{ padding: 8 }}>
                       <Repeater
                         name='companies.accounts'
                         getValue={(company: Company) => company.accounts}
@@ -119,7 +119,7 @@ const App: React.FC<AppProps> = props => {
                           );
                         }}
                       </Repeater>
-                    </div> */}
+                    </div>
                     <button onClick={() => remove(idx)}>remove company</button>
                   </div>
                 );

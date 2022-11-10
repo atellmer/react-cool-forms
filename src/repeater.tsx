@@ -18,7 +18,8 @@ export type RepeaterProps<T extends object, S extends object> = {
 function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>): React.ReactElement {
   const { name, getValue, setValue, getKey, interruptValidation, renderTrigger, tringgerPosition, children } = props;
   const { scope: formScope } = useFormContext<S>();
-  const { formValue, modify, inProcess, box, addValidator, removeValidator, addResetFn, removeResetFn } = formScope;
+  const { formValue, modify, inProcess, box, addValidator, removeValidator, addResetFn, removeResetFn, liftErrors } =
+    formScope;
   const items = getValue(formValue);
   const formRefs = useRef<Array<FormRef<any>>>([]);
   const scope = useMemo(() => ({ shouldFocusIdx: -1 }), []);
@@ -59,9 +60,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
     const resetFn = () => {
       const refs = formRefs.current.filter(Boolean);
 
-      for (const ref of refs) {
-        ref.reset();
-      }
+      refs.forEach(ref => ref.reset());
     };
 
     addResetFn(resetFn);
@@ -165,6 +164,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
             box={box}
             onChange={handleChange(idx)}
             onUnmount={handleUnmount(idx)}
+            onLiftErrors={liftErrors}
             onSubmit={dummy}>
             {({ formValue, errors, inProcess }) => {
               return children({
