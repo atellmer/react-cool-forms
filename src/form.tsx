@@ -25,12 +25,11 @@ export type FormProps<T extends object> = {
   initialFormValue: T;
   connectedRef?: React.Ref<FormRef<T>>;
   interruptValidation?: boolean;
-  box?: Box;
   children: (options: FormChildrenOptions<T>) => React.ReactElement;
   onValidate?: (options: OnValidateOptions<T>) => void;
   onChange?: (options: OnChangeOptions<T>) => void;
   onUnmount?: () => void;
-  onLiftErrors?: (erros: Record<string, string>) => void;
+  onLift?: (lifted: Lifted) => void;
   onSubmit: (options: OnSubmitOptions<T>) => void;
 };
 
@@ -38,14 +37,13 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const {
     name,
     initialFormValue,
-    box,
     connectedRef,
     interruptValidation,
     children,
     onValidate,
     onChange,
     onUnmount,
-    onLiftErrors,
+    onLift,
     onSubmit,
   } = props;
   const [formValue, setFormValue] = useState<T>(clone(initialFormValue));
@@ -108,14 +106,14 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     }
 
     if (newErrors !== errors) {
-      accumulateErrorsOnRoot(newErrors);
+      lift({ from: 'validate', value: newErrors, skipUpdate: true });
 
       if (isChild) {
         if (!detectIsDeepEqual(newErrors, errors)) {
           setErrors(newErrors);
         }
       } else {
-        performAccumulatedErrorsOnRoot();
+        lift({ from: 'validate' });
       }
     }
 
@@ -129,18 +127,20 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     const { name, formValue, validators } = options;
     let failedValidator: SyntheticValidator = null;
     let newErrors: Record<string, string> = { ...(errors || {}) };
-    const accumulatedErrors: Record<string, string> = { ...(errors || {}) };
+    const fieldErrors: Record<string, string> = { ...(errors || {}) };
 
     for (const validator of validators) {
       const fieldValue = validator.getValue(formValue);
       const isValid = await validator.method({ formValue, fieldValue });
 
-      accumulatedErrors[name] = undefined;
+      fieldErrors[name] = undefined;
 
       if (!isValid) {
+        const { message } = validator;
+
         failedValidator = validator;
-        newErrors[name] = failedValidator.message;
-        accumulatedErrors[name] = failedValidator.message;
+        newErrors[name] = message;
+        fieldErrors[name] = message;
         break;
       }
     }
@@ -157,7 +157,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
     if (!detectIsDeepEqual(newErrors, errors)) {
       setErrors(newErrors);
-      liftErrors(accumulatedErrors);
+      lift({ from: 'validateField', value: fieldErrors });
     }
 
     onValidate({ formValue, errors: newErrors, isValid });
@@ -165,38 +165,47 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     return isValid;
   });
 
-  const accumulateErrorsOnRoot = (errors: Record<string, string>) => {
-    scope.box.errors.push(errors);
-  };
-
-  const performAccumulatedErrorsOnRoot = useEvent(() => {
-    const errors = scope.box.errors.filter(Boolean);
-    const mergedErrors = mergeArrayToObject<string, {}>(errors, HAS_REPEATER_VALIDATION_ERROR);
-    const newErrors = hasKeys(mergedErrors) ? mergedErrors : null;
-
-    scope.box.errors = [];
-    setErrors(newErrors);
-  });
-
-  const liftErrors = useEvent((liftedErrors: Record<string, string>) => {
-    if (detecIsFunction(onLiftErrors)) {
-      onLiftErrors(liftedErrors);
+  const lift = useEvent((lifted: Lifted) => {
+    if (detecIsFunction(onLift)) {
+      onLift(lifted);
     } else {
-      let newErrors: Record<string, string> = { ...(errors || {}) };
+      const map: Record<Lifted['from'], () => void> = {
+        validate: () => {
+          const { skipUpdate } = lifted;
+          const liftedErrors = lifted.value as Record<string, string>;
 
-      for (const key of Object.keys(liftedErrors)) {
-        if (liftedErrors[key] !== HAS_REPEATER_VALIDATION_ERROR) {
-          newErrors[key] = liftedErrors[key];
-        }
-      }
+          if (skipUpdate) {
+            scope.accumulatedErrors.push(liftedErrors);
+          } else {
+            const errors = scope.accumulatedErrors.filter(Boolean);
+            const mergedErrors = mergeArrayToObject<string, {}>(errors, HAS_REPEATER_VALIDATION_ERROR);
+            const newErrors = hasKeys(mergedErrors) ? mergedErrors : null;
 
-      removePropertyValues(newErrors, undefined);
+            scope.accumulatedErrors = [];
+            setErrors(newErrors);
+          }
+        },
+        validateField: () => {
+          const liftedErrors = lifted.value as Record<string, string | undefined>;
+          const keys = Object.keys(liftedErrors);
+          let newErrors: Record<string, string> = { ...(errors || {}) };
 
-      newErrors = hasKeys(newErrors) ? newErrors : null;
+          for (const key of keys) {
+            if (liftedErrors[key] !== HAS_REPEATER_VALIDATION_ERROR) {
+              newErrors[key] = liftedErrors[key];
+            }
+          }
 
-      if (!detectIsDeepEqual(newErrors, errors)) {
-        setErrors(newErrors);
-      }
+          removePropertyValues(newErrors, undefined);
+          newErrors = hasKeys(newErrors) ? newErrors : null;
+
+          if (!detectIsDeepEqual(newErrors, errors)) {
+            setErrors(newErrors);
+          }
+        },
+      };
+
+      map[lifted.from] && map[lifted.from]();
     }
   });
 
@@ -244,12 +253,10 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
       removeValidator,
       addResetFn,
       removeResetFn,
-      liftErrors,
+      lift,
       validators: [],
       resetFns: [],
-      box: box || {
-        errors: [],
-      },
+      accumulatedErrors: [],
     }),
     [],
   );
@@ -266,7 +273,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   scope.removeValidator = removeValidator;
   scope.addResetFn = addResetFn;
   scope.removeResetFn = removeResetFn;
-  scope.liftErrors = liftErrors;
+  scope.lift = lift;
 
   const value = useMemo<FormStateContextValue<T>>(() => ({ scope }), [formValue, errors]);
 
@@ -345,8 +352,8 @@ export type FormScope<T extends object> = {
   addResetFn: (fn: () => void) => void;
   removeResetFn: (fn: () => void) => void;
   validateField: (options: ValidateFieldOptions<T>) => Promise<boolean>;
-  liftErrors: (errors: Record<string, string>) => void;
-  box: Box;
+  lift: (lifted: Lifted) => void;
+  accumulatedErrors: Array<Record<string, string>>;
 } & Pick<FormRef<T>, 'modify' | 'validate' | 'submit' | 'reset'>;
 
 type ValidateFieldOptions<T extends object> = {
@@ -378,8 +385,10 @@ export type OnValidateOptions<T extends object> = {
 
 export type OnChangeOptions<T extends object> = {} & SharedCallbackOptions<T>;
 
-type Box = {
-  errors: Array<Record<string, string>>;
+type Lifted<T = unknown> = {
+  from: 'validateField' | 'validate';
+  value?: T;
+  skipUpdate?: boolean;
 };
 
 export { Form, useFormContext, useFormState, useEvent };
