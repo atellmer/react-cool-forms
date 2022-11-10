@@ -317,8 +317,30 @@ function useFormContext<T extends object>() {
 
 function useFormState<T extends object>() {
   const { scope } = useFormContext<T>();
+  const {
+    formValue,
+    errors,
+    inProcess,
+    addValidator,
+    removeValidator,
+    modify,
+    validate: sourceValidate,
+    submit,
+    reset,
+  } = scope;
+  const validate = useEvent((formValue: T) => sourceValidate(formValue));
 
-  return { ...scope };
+  return {
+    formValue,
+    errors,
+    inProcess,
+    addValidator,
+    removeValidator,
+    modify,
+    validate,
+    submit,
+    reset,
+  };
 }
 
 function useEvent<T extends (...args) => any>(fn: T) {
