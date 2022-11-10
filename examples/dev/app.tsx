@@ -25,7 +25,7 @@ const App: React.FC<AppProps> = props => {
               name='name'
               getValue={(form: SettingsForm) => form.name}
               setValue={(form: SettingsForm, value: string) => (form.name = value)}
-              enableOnChangeValidation
+              //enableOnChangeValidation
               validators={[required as Validator<string, SettingsForm>]}>
               {({ value, error, onChange }) => {
                 // console.log('render settings form name');
@@ -56,8 +56,11 @@ const App: React.FC<AppProps> = props => {
                       name={`companies[${idx}].name`}
                       getValue={(company: Company) => company.name}
                       setValue={(company: Company, value: string) => (company.name = value)}
-                      enableOnChangeValidation
-                      validators={[required as Validator<string, Company>]}>
+                      //enableOnChangeValidation
+                      validators={[
+                        required as Validator<string, Company>,
+                        dependedPlace as Validator<string, Company>,
+                      ]}>
                       {({ value, error, validate, onChange }) => {
                         //console.log('render company name', idx);
                         return (
@@ -72,7 +75,7 @@ const App: React.FC<AppProps> = props => {
                       name={`companies[${idx}].place`}
                       getValue={(company: Company) => company.place}
                       setValue={(company: Company, value: string) => (company.place = value)}
-                      enableOnChangeValidation
+                      //enableOnChangeValidation
                       validators={[required as Validator<string, Company>]}>
                       {({ value, error, onChange }) => {
                         //console.log('render company place', idx);
@@ -102,7 +105,7 @@ const App: React.FC<AppProps> = props => {
                                 name={`companies[${companyIdx}].accounts[${idx}].name`}
                                 getValue={(account: Account) => account.name}
                                 setValue={(account: Account, value: string) => (account.name = value)}
-                                enableOnChangeValidation
+                                //enableOnChangeValidation
                                 validators={[required as Validator<string, Account>]}>
                                 {({ value, error, onChange }) => {
                                   //console.log('render account name', idx);
@@ -140,6 +143,11 @@ const App: React.FC<AppProps> = props => {
 const required: Validator = {
   method: ({ fieldValue }) => Boolean(fieldValue),
   message: 'It is required field',
+};
+
+const dependedPlace: Validator<string, Company> = {
+  method: ({ formValue }) => formValue.place === 'USA',
+  message: 'Depended error',
 };
 
 type SettingsForm = {
