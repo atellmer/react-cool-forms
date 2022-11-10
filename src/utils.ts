@@ -41,6 +41,10 @@ function mergeArrayToObject<S, T extends object>(items: Array<T>, exclude?: stri
   return obj;
 }
 
+function detectIsDeepEqual<T extends object>(o1: T, o2: T) {
+  return JSON.stringify(o1) === JSON.stringify(o2);
+}
+
 export {
   CONTEXT_ERROR,
   HAS_REPEATER_VALIDATION_ERROR,
@@ -50,4 +54,5 @@ export {
   removePropertyValues,
   hasKeys,
   mergeArrayToObject,
+  detectIsDeepEqual,
 };

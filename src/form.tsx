@@ -6,7 +6,6 @@ import React, {
   useImperativeHandle,
   useCallback,
   useEffect,
-  memo,
 } from 'react';
 
 import {
@@ -16,6 +15,7 @@ import {
   detecIsFunction,
   hasKeys,
   mergeArrayToObject,
+  detectIsDeepEqual,
 } from './utils';
 import { type SyntheticValidator } from './validators';
 
@@ -68,10 +68,9 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   });
 
   const validate = useEvent(async (formValue: T, isChild?: boolean): Promise<boolean> => {
-    let newErrors: Record<string, string> = null;
-    let mergedErrors: Record<string, string> = null;
     const results: Array<boolean> = [];
     const validators = scope.validators;
+    let newErrors: Record<string, string> = null;
 
     setInProcess(true);
 
@@ -101,34 +100,31 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     const isValid = results.every(x => x);
 
     if (!isValid) {
-      mergedErrors = hasKeys(newErrors) ? newErrors : null;
+      newErrors = hasKeys(newErrors) ? newErrors : null;
     }
 
-    if (mergedErrors !== errors) {
-      scope.box.errors.push(mergedErrors);
+    if (newErrors !== errors) {
+      accumulateErrorsOnRoot(newErrors);
 
       if (isChild) {
-        setErrors(mergedErrors);
+        if (!detectIsDeepEqual(newErrors, errors)) {
+          setErrors(newErrors);
+        }
       } else {
-        const errors = scope.box.errors.filter(Boolean);
-        const newErrors = mergeArrayToObject<string, {}>(errors, HAS_REPEATER_VALIDATION_ERROR);
-        const mergedErrors = hasKeys(newErrors) ? newErrors : null;
-
-        scope.box.errors = [];
-        setErrors(mergedErrors);
+        performAccumulatedErrorsOnRoot();
       }
     }
 
     setInProcess(false);
-    onValidate({ formValue, errors: mergedErrors, isValid });
+    onValidate({ formValue, errors: newErrors, isValid });
 
     return isValid;
   });
 
   const validateField = useEvent(async (options: ValidateFieldOptions<T>): Promise<boolean> => {
     const { name, formValue, validators } = options;
-    let newErrors: Record<string, string> = null;
     let failedValidator: SyntheticValidator = null;
+    let newErrors: Record<string, string> = { ...(errors || {}) };
 
     for (const validator of validators) {
       const fieldValue = validator.getValue(formValue);
@@ -136,7 +132,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
 
       if (!isValid) {
         failedValidator = validator;
-        newErrors = { [name]: failedValidator.message };
+        newErrors[name] = failedValidator.message;
         break;
       }
     }
@@ -144,19 +140,33 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     const isValid = !failedValidator;
 
     if (isValid) {
-      if (errors && errors[name]) {
-        delete errors[name];
-        newErrors = { ...errors };
+      if (newErrors && newErrors[name]) {
+        delete newErrors[name];
       }
     }
 
-    if (newErrors !== errors) {
+    newErrors = hasKeys(newErrors) ? newErrors : null;
+
+    if (!detectIsDeepEqual(newErrors, errors)) {
       setErrors(newErrors);
     }
 
     onValidate({ formValue, errors: newErrors, isValid });
 
     return isValid;
+  });
+
+  const accumulateErrorsOnRoot = (errors: Record<string, string>) => {
+    scope.box.errors.push(errors);
+  };
+
+  const performAccumulatedErrorsOnRoot = useEvent(() => {
+    const errors = scope.box.errors.filter(Boolean);
+    const mergedErrors = mergeArrayToObject<string, {}>(errors, HAS_REPEATER_VALIDATION_ERROR);
+    const newErrors = hasKeys(mergedErrors) ? mergedErrors : null;
+
+    scope.box.errors = [];
+    setErrors(newErrors);
   });
 
   const submit = useEvent(async () => {

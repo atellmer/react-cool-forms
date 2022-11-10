@@ -61,17 +61,20 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
   }, []);
 
   const handleChange = useEvent((value: T) => {
-    const { formValue, modify, validateField } = formScope;
-    const validators = scope.validators;
+    const { formValue, modify } = formScope;
 
     setValue(formValue, value);
     modify(formValue);
+    enableOnChangeValidation && (async () => await validate())();
+  });
 
-    if (enableOnChangeValidation && validators.length > 0) {
-      (async () => {
-        await validateField({ name, formValue, validators });
-      })();
-    }
+  const validate = useEvent(async (): Promise<boolean> => {
+    const { formValue, validateField } = formScope;
+    const validators = scope.validators;
+    const isValid =
+      validators.length === 0 ? await Promise.resolve(true) : await validateField({ name, formValue, validators });
+
+    return isValid;
   });
 
   return (
@@ -81,6 +84,7 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
       nodeRef={nodeRef}
       value={value}
       error={error}
+      validate={validate}
       onChange={handleChange}
     />
   );
@@ -105,9 +109,9 @@ export type FieldInnerProps<T, S extends object> = {
 
 const FieldInner = memo(
   function <T, S extends object>(props: FieldInnerProps<T, S>): React.ReactElement {
-    const { name, nodeRef, value, error, children, onChange } = props;
+    const { name, nodeRef, value, error, children, validate, onChange } = props;
 
-    return children({ name, nodeRef, value, error, onChange });
+    return children({ name, nodeRef, value, error, validate, onChange });
   },
   (prevProps, nextProps) => prevProps.updatingKey === nextProps.updatingKey,
 );
@@ -116,6 +120,7 @@ export type FieldChildrenOptions<T> = {
   name: string;
   value: T;
   error: string | null;
+  validate: () => Promise<boolean>;
   onChange: (value: T) => void;
 } & Pick<OnValidateFieldOptions<T>, 'nodeRef'>;
 
