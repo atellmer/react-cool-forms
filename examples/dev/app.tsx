@@ -44,10 +44,10 @@ const App: React.FC<AppProps> = props => {
               getKey={x => x.ID}
               renderTrigger={({ append }) => (
                 <div>
-                  <button onClick={() => append(createCompany(''))}>Add company</button>
+                  <button onClick={() => append(createCompany(''), true)}>Add company</button>
                 </div>
               )}>
-              {({ idx, remove }) => {
+              {({ idx, remove, shouldFocus }) => {
                 const companyIdx = idx;
 
                 return (
@@ -65,7 +65,7 @@ const App: React.FC<AppProps> = props => {
                         //console.log('render company name', idx);
                         return (
                           <div>
-                            <input value={value} onChange={e => onChange(e.target.value)} />
+                            <input autoFocus={shouldFocus} value={value} onChange={e => onChange(e.target.value)} />
                             {error && <div style={{ color: 'red' }}>{error}</div>}
                           </div>
                         );

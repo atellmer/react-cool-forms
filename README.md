@@ -1,5 +1,7 @@
 # react-cool-forms
 
+Powerful and flexible forms for React
+
 ## Features
 - ✔️ Real flexible API
 - ✔️ UI library agnostic
@@ -7,10 +9,15 @@
 - ✔️ Array fields
 - ✔️ Field-level validation
 - ✔️ Dependent validation
+- ✔️ onChange validation support
 - ✔️ Custom validators
 - ✔️ Async validators support
 - ✔️ High performance
 - ✔️ Small size (5 Kb gzipped)
+- ✔️ No dependencies
+
+## Demo
+  Soon
 
 ## Motivation
 I have been looking for a form validation library for react in the npm repository for a long time, but all of them did not suit me for one reason or another. First of all, I lacked the flexibility of the API of these libraries. Most of them are based on the use of simple HTML inputs and the like. But writing complex forms is not limited to inputs or checkboxes. Having a lot of experience with forms at my former company, I decided to write this library. The main message: any arbitrarily complex component that implements the value / onChange interface can be a full member of the form and pass the required validation.
@@ -50,10 +57,11 @@ const setFirstName = (form, value) => (form.firstName = value);
           validators={[required]}>
           {({ value, error, onChange }) => {
             return (
-              <div>
+              <label>
+                First name:
                 <input value={value} onChange={e => onChange(e.target.value)} />
                 {error && <div style={{ color: 'red' }}>{error}</div>}
-              </div>
+              </label>
             );
           }}
         </Field>
@@ -63,3 +71,362 @@ const setFirstName = (form, value) => (form.firstName = value);
   }}
 </Form>
 ```
+## API
+
+```tsx
+import { Form, Field, Repeater, Debugger, useFormState, type Validator } from 'react-cool-forms';
+```
+
+### Form
+
+This is the root component that contains the root react context. Forms can be nested inside each other if you need it for some reason. The main properties that a Form takes are the initialization object and the onSubmit callback.
+
+```tsx
+import { Form } from 'react-cool-forms';
+```
+
+```tsx
+<Form initialFormValue={{}} onSubmit={handleSubmit}>
+  {({ formValue, errors, inProcess, submit, reset }) => <div>Some children here...</div>}
+</Form>
+```
+
+```tsx
+type FormProps<T> = {
+  initialFormValue: T;
+  connectedRef?: React.Ref<FormRef<T>>;
+  interruptValidation?: boolean;
+  onValidate?: (options: OnValidateOptions<T>) => void;
+  onChange?: (options: OnChangeOptions<T>) => void;
+  onSubmit: (options: OnSubmitOptions<T>) => void;
+  children: (options: FormChildrenOptions<T>) => React.ReactElement;
+};
+```
+FormProps
+| props               | required | description                                                    |
+|---------------------|----------|----------------------------------------------------------------|
+| initialFormValue    | ✅        | Initialization object                                          |
+| connectedRef        |          | Ref for imperative access to main methods                      |
+| interruptValidation |          | Indicates whether to stop validation on the first error or not |
+| onValidate          |          | Called every time during validation                            |
+| onChange            |          | Called every time formValue changes                            |
+| onSubmit            | ✅        | Called after successful validation of the entire form          |
+| children            | ✅        | Render function                                                |
+
+```tsx
+type FormChildrenOptions<T> = {
+  formValue: T;
+  errors: Record<string, string>;
+  inProcess: boolean;
+  validate: (formValue: T) => Promise<boolean>;
+  submit: () => void;
+  reset: () => void;
+};
+```
+FormChildrenOptions
+| prop      | description                                                                                                  |
+|-----------|--------------------------------------------------------------------------------------------------------------|
+| formValue | Actual value of form                                                                                         |
+| errors    | Object with all validation errors                                                                            |
+| inProcess | Shows if we are in the process of validation                                                                 |
+| validate  | Manual validation start if you need it. For example, validation before moving to the next step of the wizard |
+| submit    | Call it for validation and submit form                                                                       |
+| reset     | Reset formValue to initialFormValue                                                                          |
+
+```tsx
+type OnValidateOptions<T> = {
+  formValue: T;
+  isValid: boolean;
+  errors: Record<string, string> | null;
+};
+
+type OnChangeOptions<T> = {
+  formValue: T;
+};
+
+type OnSubmitOptions<T> = {
+  formValue: T;
+};
+```
+
+### Field
+
+This is a component that renders a single form element, such as input. Since the component does not impose any restrictions on how the form element should look, it expects to receive a render function as children that will display it.
+
+```tsx
+import { Field } from 'react-cool-forms';
+```
+
+```tsx
+<Field
+  name='name'
+  getValue={(person: Person) => person.name}
+  setValue={(person: Person, value: string) => (person.name = value)}>
+  {({ value, error, onChange }) => <div>Some children here...</div>}
+</Field>
+```
+
+```tsx
+type FieldProps<T, S> = {
+  name: string;
+  getValue: (formValue: S) => T;
+  setValue: (formValue: S, fieldValue: T) => void;
+  validators?: Array<Validator<T, S>>;
+  updatingKey?: string | number;
+  enableOnChangeValidation?: boolean;
+  onValidate?: (options: OnValidateFieldOptions<T>) => void;
+  children: (options: FieldChildrenOptions<T>) => React.ReactElement;
+};
+```
+FieldProps
+| prop                     | required | description                                                                                                                                                                     |
+|--------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name                     | ✅        | A label for correctly adding an error message to the error object. It should be unique within the form                                                                                                                |
+| getValue                 | ✅        | Value access function inside formValue                                                                                                                                          |
+| setValue                 | ✅        | Function to set a new value                                                                                                                                                     |
+| validators               |          | An array of validators that will participate in the validation process of this component                                                                                        |
+| updatingKey              |          | By default, the rendering of a child component in a Field is memoized for performance reasons. You can add this key to let the component know when you still want to update it. |
+| enableOnChangeValidation |          | Enables validation on the onChange event                                                                                                                                        |
+| onValidate               |          | Fires every time a field is validated                                                                                                                                           |
+| children                 | ✅        | Render function                                                                                                                                                                 |
+
+```tsx
+type OnValidateFieldOptions<T> = {
+  isValid: boolean;
+  fieldValue: T;
+  nodeRef: RefObject<any> | null;
+};
+```
+
+```tsx
+type FieldChildrenOptions<T> = {
+  name: string;
+  value: T;
+  error: string | null;
+  nodeRef: React.RefObject<any>;
+  validate: () => Promise<boolean>;
+  onChange: (value: T) => void;
+};
+```
+FieldChildrenOptions
+| name     | required | The label that was passed to the Field                                                                                                                                                                    |
+|----------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| value    | ✅        | Field value. Must be passed to the component that will trigger the value update, such as an input                                                                                                         |
+| error    | optional | Text error if field validation fails                                                                                                                                                                      |
+| nodeRef  |          | You can pass a nodeRef to your input if you want to implement something like scrolling to an element that didn't pass validation. This ref will later be passed to the onValidate callback for this Field |
+| validate |          | Allows you to call the validation of this field, for example, on the onBlur event                                                                                                                         |
+| onChange | ✅        | Must be passed to the component that will trigger the value update, such as an input                                                                                                                      |
+
+### Validator
+
+A validator is a simple object that contains two fields: a method and a message. If you want to implement asynchronous validation, for example for a request to the server, then in the validation method, you must return a promise. You can also make validation dependent on other fields, due to the fact that the validation method accepts not only the value of one validated field, but also the value of the entire form.
+
+```tsx
+import { type Validator } from 'react-cool-forms';
+```
+
+
+```tsx
+type Validator<T, S> = {
+  method: (options: ValidatorMethodOptions<T, S>) => boolean | Promise<boolean>;
+  message: string;
+};
+
+type ValidatorMethodOptions<T, S> = {
+  fieldValue: T;
+  formValue: S;
+};
+```
+
+```tsx
+// Example of sync validator
+const required = {
+  method: ({ formValue, fieldValue }) => Boolean(fieldValue),
+  message: `It's required field`,
+};
+
+// Example of async validator
+const checkLogin = {
+  method: ({ formValue, fieldValue }) => {
+    return new Promise(resolve => {
+      // Emulates request to server
+      setTimeout(() => {
+        resolve(true);
+      }, 200);
+    })
+  },
+  message: 'This login already exists',
+};
+```
+
+### Repeater
+
+In order to work with array-based forms, there is a Repeater component. It renders a list of nested Fields that, behind the scenes, work as a separate form with its own context, but in the end, thanks to the Repeater magic, arrays of forms can be treated as one. You can also nest Repeaters within each other if your data structure requires it. For example, you have an array of companies in your structure, and each of those companies has an array of accounts, and so on.
+
+```tsx
+import { Repeater } from 'react-cool-forms';
+```
+
+```tsx
+const getCompanies = (form: MyForm): Array<Company> => form.companies;
+const setCompanies = (form: MyForm, value: Array<Company>) => (form.companies = value);
+const getKey = (value: Company) => value.ID;
+const renderTrigger = ({ append }) => {
+  return <button onClick={() => append(createCompany())}>Add company</button>;
+};
+
+const getCompanyName = (company: Company) => company.name;
+const setCompanyName = (company: Company, value: string) => (company.name = value);
+
+<Repeater
+  name='companies'
+  getValue={getCompanies}
+  setValue={setCompanies}
+  getKey={getKey}
+  renderTrigger={renderTrigger}>
+  {({ idx, shouldFocus, remove }) => {
+    return (
+      <>
+        <Field
+          name={`companies[${idx}].name`} // Name can be any unique value
+          getValue={getCompanyName}
+          setValue={setCompanyName}
+          validators={[required]}>
+          {({ value, error, onChange }) => <div>Some children here...</div>}
+        </Field>
+        <button onClick={() => remove(idx)}>remove company</button>
+      </>
+    );
+  }}
+</Repeater>
+```
+
+```tsx
+type RepeaterProps<T, S> = {
+  name: string;
+  getValue: (formValue: S) => Array<T>;
+  setValue: (formValue: S, fieldValue: Array<T>) => void;
+  getKey: (formValue: T) => string | number;
+  interruptValidation?: boolean;
+  tringgerPosition?: 'before' | 'after';
+  renderTrigger?: (options: RenderTriggerOptions<T>) => React.ReactElement;
+  children: (options: RepeaterChildrenOptions<T>) => React.ReactElement;
+};
+```
+
+RepeaterProps
+| prop                | required | description                                                                                                             |
+|---------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
+| name                | ✅        | A label for correctly adding an error message to the error object. It should be unique within the form                  |
+| getValue            | ✅        | Value access function inside formValue                                                                                  |
+| setValue            | ✅        | Function to set a new value                                                                                             |
+| getKey              | ✅        | A function to return the unique ID of an object. needed so that React knows when it should unmount the node completely. |
+| interruptValidation |          | Indicates whether to stop validation on the first error or not                                                          |
+| tringgerPosition    |          | Specifies where to render form control buttons: before or after the list                                                |
+| renderTrigger       |          | A function that should render buttons for adding elements to an array.                                                  |
+| children            | ✅        | Render function                                                                                                         |
+
+```tsx
+type RenderTriggerOptions<T extends object> = {
+  inProcess: boolean;
+  size: number;
+  append: (item: T, shouldFocus?: boolean) => void;
+  prepend: (item: T, shouldFocus?: boolean) => void;
+  insert: (idx: number, item: T, shouldFocus?: boolean) => void;
+  swap: (from: number, to: number) => void;
+  remove: (idx: number | Array<number>) => void;
+};
+```
+RenderTriggerOptions
+| prop      | description                                                                              |
+|-----------|------------------------------------------------------------------------------------------|
+| inProcess | Shows if we are in the process of validation                                             |
+| size      | Number of elements in the current array                                                  |
+| append    | Allows you to add an element to the end of the list                                      |
+| prepend   | Allows you to add an element to the beginning of the list                                |
+| insert    | Allows you to add an element at the specified index                                      |
+| swap      | Allows swapping 2 list items                                                             |
+| remove    | Allows you to remove an element from the list at the specified index or array of indices |
+
+Note that some list management methods take a shouldFocus parameter. If this parameter is true, then when rendering the list, you will need to pass it as an input to the autoFocus property.
+
+```tsx
+type RepeaterChildrenOptions<T> = {
+  idx: number;
+  isFirst: boolean;
+  isLast: boolean;
+  isEven: boolean;
+  isOdd: boolean;
+  isSingle: boolean;
+  size: number;
+  shouldFocus: boolean;
+  formValue: T;
+  errors: Record<string, string> | null;
+  inProcess: boolean;
+  remove: (idx: number | Array<number>) => void;
+};
+```
+
+### Debugger
+
+This is the component you need to view the formatted formValue and errors while using the form. To use it, you just need to put it inside a Form.
+
+```tsx
+import { Debugger } from 'react-cool-forms';
+```
+
+```tsx
+<Form initialFormValue={{}} onSubmit={handleSubmit}>
+  {({ formValue, errors, inProcess, submit, reset }) => 
+    <>
+      <div>Some children here...</div>
+      <Debugger />
+    </>
+  }
+</Form>
+```
+```tsx
+// Example of output
+{
+  "errors": {
+    "name": "It is required field"
+  },
+  "formValue": {
+    "name": "",
+    "companies": [
+      {
+        "ID": 1,
+        "name": "Company #1"
+      },
+      {
+        "ID": 2,
+        "name": "Company #2"
+      }
+    ]
+  }
+}
+```
+
+### useFormState
+
+A hook that you can use to access the form value and some of its useful methods while inside child components.
+
+```tsx
+const {
+  formValue,
+  errors,
+  inProcess,
+  addValidator,
+  removeValidator,
+  modify,
+  validate,
+  submit,
+  reset,
+} = useFormState();
+```
+
+Be sure to look at examples of using various APIs in the examples folder.
+
+# LICENSE
+
+MIT © [Alex Plex](https://github.com/atellmer)
