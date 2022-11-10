@@ -10,13 +10,13 @@ export type RepeaterProps<T extends object, S extends object> = {
   setValue: (formValue: S, fieldValue: Array<T>) => void;
   getKey: (formValue: T) => string | number;
   interruptValidation?: boolean;
-  tringgerPosition?: 'before' | 'after';
+  triggerPosition?: 'before' | 'after';
   renderTrigger?: (options: RenderTriggerOptions<T>) => React.ReactElement;
   children: (options: RepeaterChildrenOptions<T>) => React.ReactElement;
 };
 
 function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>): React.ReactElement {
-  const { name, getValue, setValue, getKey, interruptValidation, renderTrigger, tringgerPosition, children } = props;
+  const { name, getValue, setValue, getKey, interruptValidation, renderTrigger, triggerPosition, children } = props;
   const { scope: formScope } = useFormContext<S>();
   const { formValue, modify, inProcess, addValidator, removeValidator, addResetFn, removeResetFn, lift } = formScope;
   const items = getValue(formValue);
@@ -137,7 +137,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
     modify(formValue);
   });
 
-  const isAfter = tringgerPosition === 'after';
+  const isAfter = triggerPosition === 'after';
   const isBefore = !isAfter;
   const isSingle = items.length === 1;
   const size = items.length;
@@ -193,7 +193,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
 const RepeaterComponent: React.FC<RepeaterProps<{}, {}>> = Repeater;
 
 RepeaterComponent.defaultProps = {
-  tringgerPosition: 'after',
+  triggerPosition: 'after',
 };
 
 export type RepeaterChildrenOptions<T extends object> = {

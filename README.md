@@ -308,7 +308,7 @@ type RepeaterProps<T, S> = {
   setValue: (formValue: S, fieldValue: Array<T>) => void;
   getKey: (formValue: T) => string | number;
   interruptValidation?: boolean;
-  tringgerPosition?: 'before' | 'after';
+  triggerPosition?: 'before' | 'after';
   renderTrigger?: (options: RenderTriggerOptions<T>) => React.ReactElement;
   children: (options: RepeaterChildrenOptions<T>) => React.ReactElement;
 };
@@ -322,7 +322,7 @@ RepeaterProps
 | setValue            | ✅        | Function to set a new value                                                                                             |
 | getKey              | ✅        | A function to return the unique ID of an object. needed so that React knows when it should unmount the node completely. |
 | interruptValidation |          | Indicates whether to stop validation on the first error or not                                                          |
-| tringgerPosition    |          | Specifies where to render form control buttons: before or after the list                                                |
+| triggerPosition    |          | Specifies where to render form control buttons: before or after the list                                                |
 | renderTrigger       |          | A function that should render buttons for adding elements to an array.                                                  |
 | children            | ✅        | Render function                                                                                                         |
 
