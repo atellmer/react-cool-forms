@@ -111,7 +111,7 @@ FormProps
 | onValidate          |          | Called every time during validation                            |
 | onChange            |          | Called every time formValue changes                            |
 | onSubmit            | ✅        | Called after successful validation of the entire form          |
-| children            | ✅        | Render function                                                |
+| children            | ✅        | Render function that takes options (FormChildrenOptions)                                               |
 
 ```tsx
 type FormChildrenOptions<T> = {
@@ -188,7 +188,7 @@ FieldProps
 | updatingKey              |          | By default, the rendering of a child component in a Field is memoized for performance reasons. You can add this key to let the component know when you still want to update it. |
 | enableOnChangeValidation |          | Enables validation on the onChange event                                                                                                                                        |
 | onValidate               |          | Fires every time a field is validated                                                                                                                                           |
-| children                 | ✅        | Render function                                                                                                                                                                 |
+| children                 | ✅        | Render function that takes options (FieldChildrenOptions)                                                                                                                                                                 |
 
 ```tsx
 type OnValidateFieldOptions<T> = {
@@ -278,27 +278,33 @@ const renderTrigger = ({ append }) => {
 const getCompanyName = (company: Company) => company.name;
 const setCompanyName = (company: Company, value: string) => (company.name = value);
 
-<Repeater
-  name='companies'
-  getValue={getCompanies}
-  setValue={setCompanies}
-  getKey={getKey}
-  renderTrigger={renderTrigger}>
-  {({ idx, shouldFocus, remove }) => {
+<Form initialFormValue={initialFormValue} onSubmit={handleSubmit}>
+  {({ submit }) => {
     return (
-      <>
-        <Field
-          name={`companies[${idx}].name`} // Name can be any unique value
-          getValue={getCompanyName}
-          setValue={setCompanyName}
-          validators={[required]}>
-          {({ value, error, onChange }) => <div>Some children here...</div>}
-        </Field>
-        <button onClick={() => remove(idx)}>remove company</button>
-      </>
+      <Repeater
+        name='companies'
+        getValue={getCompanies}
+        setValue={setCompanies}
+        getKey={getKey}
+        renderTrigger={renderTrigger}>
+        {({ idx, shouldFocus, remove }) => {
+          return (
+            <>
+              <Field
+                name={`companies[${idx}].name`} // Name can be any unique value
+                getValue={getCompanyName}
+                setValue={setCompanyName}
+                validators={[required]}>
+                {({ value, error, onChange }) => <div>Some children here...</div>}
+              </Field>
+              <button onClick={() => remove(idx)}>remove company</button>
+            </>
+          );
+        }}
+      </Repeater>
     );
   }}
-</Repeater>
+</Form>
 ```
 
 ```tsx
@@ -320,11 +326,11 @@ RepeaterProps
 | name                | ✅        | A label for correctly adding an error message to the error object. It should be unique within the form                  |
 | getValue            | ✅        | Value access function inside formValue                                                                                  |
 | setValue            | ✅        | Function to set a new value                                                                                             |
-| getKey              | ✅        | A function to return the unique ID of an object. needed so that React knows when it should unmount the node completely. |
+| getKey              | ✅        | A function to return the unique ID of an object. Needed so that React knows when it should unmount the node completely. |
 | interruptValidation |          | Indicates whether to stop validation on the first error or not                                                          |
 | triggerPosition    |          | Specifies where to render form control buttons: before or after the list                                                |
-| renderTrigger       |          | A function that should render buttons for adding elements to an array.                                                  |
-| children            | ✅        | Render function                                                                                                         |
+| renderTrigger       |          | A function that that takes options (RenderTriggerOptions) and should render buttons for adding elements to an array.                                                  |
+| children            | ✅        | Render function that takes options (RepeaterChildrenOptions)                                                                                                         |
 
 ```tsx
 type RenderTriggerOptions<T extends object> = {
