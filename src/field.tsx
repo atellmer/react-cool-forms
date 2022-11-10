@@ -25,38 +25,41 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
     onValidate,
   } = props;
   const { scope: formScope } = useFormContext<S>();
-  const { formValue, errors, inProcess, addValidator, removeValidator } = formScope;
+  const { formValue, errors, inProcess, addValidator, removeValidator, lift } = formScope;
   const nodeRef = useRef<HTMLElement>(null);
   const value = getValue(formValue);
   const error = errors ? errors[name] || null : null;
   const valueID = useMemo(() => getNextValueID(), [value]);
-  const scope = useMemo<FieldScope>(() => ({ nodeRef, validators: [], onValidate }), []);
+  const scope = useMemo<FieldScope<T>>(() => ({ validators: [] }), []);
   const updatingKey = `${externalUpdatingKey}:${valueID}:${error}:${inProcess}`;
 
-  scope.nodeRef = nodeRef;
-  scope.onValidate = onValidate;
-
-  const createValidators = () => {
-    const validators: Array<SyntheticValidator> = sourceValidators.map(validator => {
-      return {
-        ...validator,
-        name,
-        getValue,
-        nodeRef: scope.nodeRef,
-        onValidate: scope.onValidate,
-      };
-    });
-
-    return validators;
-  };
-
   useEffect(() => {
+    const createValidators = () => {
+      const validators: Array<SyntheticValidator> = sourceValidators.map(validator => {
+        return {
+          ...validator,
+          name,
+          getValue,
+          nodeRef,
+          onValidate,
+        };
+      });
+
+      return validators;
+    };
+
     scope.validators = createValidators();
     scope.validators.forEach(x => addValidator(x));
 
     return () => {
       scope.validators.forEach(x => removeValidator(x));
       scope.validators = [];
+    };
+  }, [name]);
+
+  useEffect(() => {
+    return () => {
+      lift({ from: 'validateField', value: { [name]: undefined } });
     };
   }, []);
 
@@ -96,10 +99,8 @@ FieldComponent.defaultProps = {
   onValidate: () => {},
 };
 
-type FieldScope = {
-  nodeRef: React.RefObject<any>;
+type FieldScope<T> = {
   validators: Array<SyntheticValidator>;
-  onValidate: (options: OnValidateFieldOptions<any>) => void;
 };
 
 export type FieldInnerProps<T, S extends object> = {

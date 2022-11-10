@@ -45,6 +45,17 @@ function detectIsDeepEqual<T extends object>(o1: T, o2: T) {
   return JSON.stringify(o1) === JSON.stringify(o2);
 }
 
+function transformOjectToArray<T>(obj: Record<string, T>) {
+  const items: Array<T> = [];
+  const keys = Object.keys(obj);
+
+  for (const key of keys) {
+    items.push(obj[key]);
+  }
+
+  return items;
+}
+
 export {
   CONTEXT_ERROR,
   HAS_REPEATER_VALIDATION_ERROR,
@@ -55,4 +66,5 @@ export {
   hasKeys,
   mergeArrayToObject,
   detectIsDeepEqual,
+  transformOjectToArray,
 };

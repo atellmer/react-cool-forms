@@ -21,15 +21,15 @@ import {
 import { type SyntheticValidator } from './validators';
 
 export type FormProps<T extends object> = {
-  name?: string;
+  name?: string; // for internal use
   initialFormValue: T;
   connectedRef?: React.Ref<FormRef<T>>;
   interruptValidation?: boolean;
   children: (options: FormChildrenOptions<T>) => React.ReactElement;
   onValidate?: (options: OnValidateOptions<T>) => void;
   onChange?: (options: OnChangeOptions<T>) => void;
-  onUnmount?: () => void;
-  onLift?: (lifted: Lifted) => void;
+  onUnmount?: () => void; // for internal use
+  onLift?: (lifted: Lifted) => void; // for internal use
   onSubmit: (options: OnSubmitOptions<T>) => void;
 };
 

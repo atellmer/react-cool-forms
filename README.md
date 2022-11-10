@@ -114,6 +114,16 @@ FormProps
 | children            | ✅        | Render function that takes options (FormChildrenOptions)                                               |
 
 ```tsx
+type FormRef<T> = {
+  getFormValue: () => T;
+  modify: (formValue: T) => void;
+  validate: (formValue: T) => Promise<boolean>;
+  submit: () => void;
+  reset: () => void;
+};
+```
+
+```tsx
 type FormChildrenOptions<T> = {
   formValue: T;
   errors: Record<string, string>;
@@ -287,11 +297,11 @@ const setCompanyName = (company: Company, value: string) => (company.name = valu
         setValue={setCompanies}
         getKey={getKey}
         renderTrigger={renderTrigger}>
-        {({ idx, shouldFocus, remove }) => {
+        {({ idx, key, shouldFocus, remove }) => {
           return (
             <>
               <Field
-                name={`companies[${idx}].name`} // Name can be any unique value
+                name={`companies(${key}).name`} // Name can be any unique value
                 getValue={getCompanyName}
                 setValue={setCompanyName}
                 validators={[required]}>
@@ -310,6 +320,7 @@ const setCompanyName = (company: Company, value: string) => (company.name = valu
 ```tsx
 type RepeaterProps<T, S> = {
   name: string;
+  connectedRef?: React.Ref<RepeaterRef<T>>;
   getValue: (formValue: S) => Array<T>;
   setValue: (formValue: S, fieldValue: Array<T>) => void;
   getKey: (formValue: T) => string | number;
@@ -324,6 +335,7 @@ RepeaterProps
 | prop                | required | description                                                                                                             |
 |---------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
 | name                | ✅        | A label for correctly adding an error message to the error object. It should be unique within the form                  |
+| connectedRef        |           | Ref for imperative access to list modification methods (append, prepend, insert, swap, remove)                                                                                                                                                     |
 | getValue            | ✅        | Value access function inside formValue                                                                                  |
 | setValue            | ✅        | Function to set a new value                                                                                             |
 | getKey              | ✅        | A function to return the unique ID of an object. Needed so that React knows when it should unmount the node completely. |
@@ -333,7 +345,7 @@ RepeaterProps
 | children            | ✅        | Render function that takes options (RepeaterChildrenOptions)                                                                                                         |
 
 ```tsx
-type RenderTriggerOptions<T extends object> = {
+type RenderTriggerOptions<T> = {
   inProcess: boolean;
   size: number;
   append: (item: T, shouldFocus?: boolean) => void;
@@ -358,6 +370,7 @@ Note that some list management methods take a shouldFocus parameter. If this par
 
 ```tsx
 type RepeaterChildrenOptions<T> = {
+  key: string | number;
   idx: number;
   isFirst: boolean;
   isLast: boolean;
