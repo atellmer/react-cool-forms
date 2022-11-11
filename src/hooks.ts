@@ -49,8 +49,6 @@ function useFormState<T extends object>() {
     formValue,
     errors,
     inProcess,
-    addSubscriber,
-    removeSubscriber,
     addValidator,
     removeValidator,
     modify,
