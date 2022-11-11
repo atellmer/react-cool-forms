@@ -1,15 +1,7 @@
-import React, {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  useImperativeHandle,
-  useCallback,
-  useEffect,
-} from 'react';
+import React, { useMemo, useState, useImperativeHandle, useEffect } from 'react';
 
+import { FormContext, type FormContextValue } from './context';
 import {
-  CONTEXT_ERROR,
   HAS_REPEATER_VALIDATION_ERROR,
   clone,
   detecIsFunction,
@@ -19,6 +11,7 @@ import {
   removePropertyValues,
 } from './utils';
 import { type SyntheticValidator } from './validators';
+import { useEvent, useUpdate } from './hooks';
 
 export type FormProps<T extends object> = {
   name?: string; // for internal use
@@ -46,81 +39,107 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     onLift,
     onSubmit,
   } = props;
-  const [formValue, setFormValue] = useState<T>(clone(initialFormValue));
+  const { update } = useUpdate();
   const [errors, setErrors] = useState<Record<string, string>>(null);
   const [inProcess, setInProcess] = useState(false);
+  const scope = useMemo(() => ({ formValue: clone(initialFormValue) }), []);
+  const formValue = scope.formValue;
 
   useEffect(() => {
     return () => detecIsFunction(onUnmount) && onUnmount();
   }, []);
 
   const modify = useEvent((formValue: T) => {
-    const newFormValue = { ...formValue };
+    scope.formValue = { ...formValue };
 
-    setFormValue(newFormValue);
-    onChange({ formValue: newFormValue });
+    update();
+    onChange({ formValue: scope.formValue });
+  });
+
+  const notify = useEvent((formValue: T) => {
+    scope.formValue = { ...formValue };
+    const isRoot = !onLift;
+
+    onChange({ formValue: scope.formValue });
+
+    if (isRoot) {
+      state.formValue = scope.formValue;
+      state.subscribers.forEach(fn => fn());
+    }
   });
 
   const reset = useEvent(() => {
     setErrors(null);
     modify(clone(initialFormValue));
     setTimeout(() => {
-      scope.resetFns.forEach(fn => fn());
+      state.resetFns.forEach(fn => fn());
     });
   });
 
-  const validate = useEvent(async (formValue: T, isChild?: boolean): Promise<boolean> => {
+  const validate = useEvent((formValue: T, isChild?: boolean): Promise<boolean> => {
     const results: Array<boolean> = [];
-    const validators = scope.validators;
+    const validators = state.validators;
     let newErrors: Record<string, string> = null;
 
     setInProcess(true);
 
-    for (const validator of validators) {
-      const fieldValue = validator.getValue(formValue);
-      const isValid = await validator.method({ formValue, fieldValue });
+    const process = async () => {
+      for (const validator of validators) {
+        const fieldValue = validator.getValue(formValue);
+        const isValid = await validator.method({ formValue, fieldValue });
 
-      results.push(isValid);
+        results.push(isValid);
 
-      if (detecIsFunction(validator.onValidate)) {
-        validator.onValidate({ isValid, fieldValue, nodeRef: validator.nodeRef });
+        if (detecIsFunction(validator.onValidate)) {
+          validator.onValidate({ isValid, fieldValue, nodeRef: validator.nodeRef });
+        }
+
+        if (!isValid) {
+          if (!newErrors) {
+            newErrors = {};
+          }
+          if (!newErrors[validator.name]) {
+            newErrors[validator.name] = validator.message;
+          }
+          if (interruptValidation) {
+            break;
+          }
+        }
       }
+
+      const isValid = results.every(x => x);
 
       if (!isValid) {
-        if (!newErrors) {
-          newErrors = {};
-        }
-        if (!newErrors[validator.name]) {
-          newErrors[validator.name] = validator.message;
-        }
-        if (interruptValidation) {
-          break;
+        newErrors = hasKeys(newErrors) ? newErrors : null;
+      }
+
+      if (newErrors !== errors) {
+        lift({ from: 'validate', value: newErrors, skipUpdate: true });
+
+        if (isChild) {
+          if (!detectIsDeepEqual(newErrors, errors)) {
+            setErrors(newErrors);
+          }
+        } else {
+          lift({ from: 'validate' });
         }
       }
-    }
 
-    const isValid = results.every(x => x);
+      setInProcess(false);
+      onValidate({ formValue, errors: newErrors, isValid });
 
-    if (!isValid) {
-      newErrors = hasKeys(newErrors) ? newErrors : null;
-    }
+      return isValid;
+    };
 
-    if (newErrors !== errors) {
-      lift({ from: 'validate', value: newErrors, skipUpdate: true });
-
+    return new Promise<boolean>(async resolve => {
       if (isChild) {
-        if (!detectIsDeepEqual(newErrors, errors)) {
-          setErrors(newErrors);
-        }
+        resolve(await process());
       } else {
-        lift({ from: 'validate' });
+        requestAnimationFrame(async () => {
+          resolve(await process());
+        });
       }
-    }
-
-    setInProcess(false);
-    onValidate({ formValue, errors: newErrors, isValid });
-
-    return isValid;
+    });
   });
 
   const validateField = useEvent(async (options: ValidateFieldOptions<T>): Promise<boolean> => {
@@ -175,13 +194,13 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
           const liftedErrors = lifted.value as Record<string, string>;
 
           if (skipUpdate) {
-            scope.accumulatedErrors.push(liftedErrors);
+            state.accumulatedErrors.push(liftedErrors);
           } else {
-            const errors = scope.accumulatedErrors.filter(Boolean);
+            const errors = state.accumulatedErrors.filter(Boolean);
             const mergedErrors = mergeArrayToObject<string, {}>(errors, HAS_REPEATER_VALIDATION_ERROR);
             const newErrors = hasKeys(mergedErrors) ? mergedErrors : null;
 
-            scope.accumulatedErrors = [];
+            state.accumulatedErrors = [];
             setErrors(newErrors);
           }
         },
@@ -210,50 +229,67 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   });
 
   const submit = useEvent(async () => {
+    const { formValue } = scope;
     const isValid = await validate(formValue);
 
     isValid && onSubmit({ formValue });
   });
 
+  const addSubscriber = useEvent((subscriber: () => void) => {
+    state.subscribers.push(subscriber);
+  });
+
+  const removeSubscriber = useEvent((subscriber: () => void) => {
+    const idx = state.subscribers.findIndex(x => x === subscriber);
+
+    if (idx !== -1) {
+      state.subscribers.splice(idx, 1);
+    }
+  });
+
   const addValidator = useEvent((validator: SyntheticValidator) => {
-    scope.validators.push(validator);
+    state.validators.push(validator);
   });
 
   const removeValidator = useEvent((validator: SyntheticValidator) => {
-    const idx = scope.validators.findIndex(x => x === validator);
+    const idx = state.validators.findIndex(x => x === validator);
 
     if (idx !== -1) {
-      scope.validators.splice(idx, 1);
+      state.validators.splice(idx, 1);
     }
   });
 
   const addResetFn = useEvent((fn: () => void) => {
-    scope.resetFns.push(fn);
+    state.resetFns.push(fn);
   });
 
   const removeResetFn = useEvent((fn: () => void) => {
-    const idx = scope.resetFns.findIndex(x => x === fn);
+    const idx = state.resetFns.findIndex(x => x === fn);
 
     if (idx !== -1) {
-      scope.resetFns.splice(idx, 1);
+      state.resetFns.splice(idx, 1);
     }
   });
 
-  const scope = useMemo<FormScope<T>>(
+  const state = useMemo<FormState<T>>(
     () => ({
       formValue,
       errors,
       inProcess,
       modify,
+      notify,
       validate,
       validateField,
       submit,
       reset,
+      addSubscriber,
+      removeSubscriber,
       addValidator,
       removeValidator,
       addResetFn,
       removeResetFn,
       lift,
+      subscribers: [],
       validators: [],
       resetFns: [],
       accumulatedErrors: [],
@@ -261,25 +297,22 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     [],
   );
 
-  scope.formValue = formValue;
-  scope.errors = errors;
-  scope.inProcess = inProcess;
-  scope.modify = modify;
-  scope.validate = validate;
-  scope.validateField = validateField;
-  scope.submit = submit;
-  scope.reset = reset;
-  scope.addValidator = addValidator;
-  scope.removeValidator = removeValidator;
-  scope.addResetFn = addResetFn;
-  scope.removeResetFn = removeResetFn;
-  scope.lift = lift;
+  state.formValue = formValue;
+  state.errors = errors;
+  state.inProcess = inProcess;
+  state.modify = modify;
+  state.notify = notify;
+  state.validate = validate;
+  state.validateField = validateField;
+  state.submit = submit;
+  state.reset = reset;
+  state.lift = lift;
 
-  const value = useMemo<FormStateContextValue<T>>(() => ({ scope }), [formValue, errors]);
+  const value = useMemo<FormContextValue<T>>(() => ({ state }), [formValue, errors]);
 
   useImperativeHandle(connectedRef, () => {
     const ref: FormRef<T> = {
-      getFormValue: () => formValue,
+      getFormValue: () => state.formValue,
       modify,
       validate,
       submit,
@@ -290,9 +323,9 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   });
 
   return (
-    <FormStateContext.Provider value={value}>
+    <FormContext.Provider value={value}>
       {children({ formValue, errors, inProcess, validate, reset, submit })}
-    </FormStateContext.Provider>
+    </FormContext.Provider>
   );
 }
 
@@ -303,58 +336,6 @@ FormComponent.defaultProps = {
   onChange: () => {},
 };
 
-const FormStateContext = createContext<FormStateContextValue>(null);
-
-function useFormContext<T extends object>() {
-  const value = useContext<FormStateContextValue<T>>(FormStateContext);
-
-  if (!value) {
-    throw new Error(CONTEXT_ERROR);
-  }
-
-  return value;
-}
-
-function useFormState<T extends object>() {
-  const { scope } = useFormContext<T>();
-  const {
-    formValue,
-    errors,
-    inProcess,
-    addValidator,
-    removeValidator,
-    modify,
-    validate: sourceValidate,
-    submit,
-    reset,
-  } = scope;
-  const validate = useEvent((formValue: T) => sourceValidate(formValue));
-
-  return {
-    formValue,
-    errors,
-    inProcess,
-    addValidator,
-    removeValidator,
-    modify,
-    validate,
-    submit,
-    reset,
-  };
-}
-
-function useEvent<T extends (...args) => any>(fn: T) {
-  const scope = useMemo(() => ({ fn }), []);
-
-  scope.fn = fn;
-
-  const callback = useCallback((...args) => {
-    return scope.fn(...args);
-  }, []);
-
-  return callback as unknown as T;
-}
-
 export type FormRef<T extends object> = {
   getFormValue: () => T;
   modify: (formValue: T) => void;
@@ -363,12 +344,16 @@ export type FormRef<T extends object> = {
   reset: () => void;
 };
 
-export type FormScope<T extends object> = {
+export type FormState<T extends object> = {
   formValue: T;
   errors: Record<string, string> | null;
   inProcess: boolean;
+  subscribers: Array<() => void>;
   validators: Array<SyntheticValidator>;
   resetFns: Array<() => void>;
+  notify: (formValue: T) => void;
+  addSubscriber: (subscriber: () => void) => void;
+  removeSubscriber: (subscriber: () => void) => void;
   addValidator: (validator: SyntheticValidator) => void;
   removeValidator: (validator: SyntheticValidator) => void;
   addResetFn: (fn: () => void) => void;
@@ -382,10 +367,6 @@ type ValidateFieldOptions<T extends object> = {
   name: string;
   formValue: T;
   validators: Array<SyntheticValidator>;
-};
-
-type FormStateContextValue<T extends object = any> = {
-  scope: FormScope<T>;
 };
 
 type SharedCallbackOptions<T extends object> = {
@@ -413,4 +394,4 @@ type Lifted<T = unknown> = {
   skipUpdate?: boolean;
 };
 
-export { Form, useFormContext, useFormState, useEvent };
+export { Form };

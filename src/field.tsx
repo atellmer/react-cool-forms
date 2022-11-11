@@ -1,7 +1,8 @@
 import React, { memo, useEffect, useMemo, useRef } from 'react';
 
-import { useFormContext, useEvent } from './form';
+import { useFormContext } from './context';
 import { type Validator, type SyntheticValidator, type OnValidateFieldOptions } from './validators';
+import { useUpdate, useEvent } from './hooks';
 
 export type FieldProps<T, S extends object> = {
   name: string;
@@ -24,10 +25,11 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
     enableOnChangeValidation,
     onValidate,
   } = props;
-  const { scope: formScope } = useFormContext<S>();
-  const { formValue, errors, inProcess, addValidator, removeValidator, lift } = formScope;
-  const nodeRef = useRef<HTMLElement>(null);
+  const { state: formState } = useFormContext<S>();
+  const { formValue, errors, inProcess, addValidator, removeValidator, lift } = formState;
+  const { update } = useUpdate();
   const value = getValue(formValue);
+  const nodeRef = useRef<HTMLElement>(null);
   const error = errors ? errors[name] || null : null;
   const valueID = useMemo(() => getNextValueID(), [value]);
   const scope = useMemo<FieldScope<T>>(() => ({ validators: [] }), []);
@@ -64,15 +66,16 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
   }, []);
 
   const handleChange = useEvent((value: T) => {
-    const { formValue, modify } = formScope;
+    const { formValue, notify } = formState;
 
     setValue(formValue, value);
-    modify(formValue);
+    notify(formValue);
+    update();
     enableOnChangeValidation && (async () => await validate())();
   });
 
   const validate = useEvent(async (): Promise<boolean> => {
-    const { formValue, validateField } = formScope;
+    const { formValue, validateField } = formState;
     const validators = scope.validators;
     const isValid =
       validators.length === 0 ? await Promise.resolve(true) : await validateField({ name, formValue, validators });

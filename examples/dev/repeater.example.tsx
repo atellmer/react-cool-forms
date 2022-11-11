@@ -19,6 +19,7 @@ const App: React.FC<AppProps> = props => {
   return (
     <Form name='settingsForm' initialFormValue={initialFormValue} onSubmit={x => console.log('submit', x)}>
       {({ errors, submit, reset }) => {
+        console.log('[render]');
         return (
           <>
             <Field
@@ -47,13 +48,11 @@ const App: React.FC<AppProps> = props => {
                   <button onClick={() => append(createCompany(''))}>Add company</button>
                 </div>
               )}>
-              {({ idx, remove }) => {
-                const companyIdx = idx;
-
+              {({ idx, key: companyKey, remove }) => {
                 return (
                   <div style={{ padding: 8, backgroundColor: '#eee', borderBottom: '1px solid black' }}>
                     <Field
-                      name={`companies[${idx}].name`}
+                      name={`companies(${companyKey}).name`}
                       getValue={(company: Company) => company.name}
                       setValue={(company: Company, value: string) => (company.name = value)}
                       enableOnChangeValidation
@@ -79,11 +78,11 @@ const App: React.FC<AppProps> = props => {
                             <button onClick={() => append(createAccount(''))}>Add account</button>
                           </div>
                         )}>
-                        {({ idx, remove }) => {
+                        {({ idx, key: accountKey, remove }) => {
                           return (
                             <div>
                               <Field
-                                name={`companies[${companyIdx}].accounts[${idx}].name`}
+                                name={`companies(${companyKey}).accounts(${accountKey}).name`}
                                 getValue={(account: Account) => account.name}
                                 setValue={(account: Account, value: string) => (account.name = value)}
                                 enableOnChangeValidation

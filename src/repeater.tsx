@@ -1,8 +1,10 @@
 import React, { useRef, useEffect, useMemo, useImperativeHandle } from 'react';
 
-import { Form, useFormContext, useEvent, type OnChangeOptions, type FormRef, type FormChildrenOptions } from './form';
+import { useFormContext } from './context';
+import { Form, type OnChangeOptions, type FormRef, type FormChildrenOptions } from './form';
 import { HAS_REPEATER_VALIDATION_ERROR, detecIsFunction, dummy, transformOjectToArray } from './utils';
 import { type SyntheticValidator } from './validators';
+import { useEvent } from './hooks';
 
 export type RepeaterProps<T extends object, S extends object> = {
   name: string;
@@ -28,8 +30,9 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
     triggerPosition,
     children,
   } = props;
-  const { scope: formScope } = useFormContext<S>();
-  const { formValue, modify, inProcess, addValidator, removeValidator, addResetFn, removeResetFn, lift } = formScope;
+  const { state: formState } = useFormContext<S>();
+  const { formValue, modify, notify, inProcess, addValidator, removeValidator, addResetFn, removeResetFn, lift } =
+    formState;
   const items = getValue(formValue);
   const formRefs = useRef<Record<string, FormRef<T>>>({});
   const scope = useMemo(() => ({ shouldFocusIdx: -1 }), []);
@@ -93,7 +96,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
 
       items[idx] = item;
       setValue(formValue, items);
-      modify(formValue);
+      notify(formValue);
     };
 
   const append = useEvent((item: T, shouldFocus?: boolean) => {

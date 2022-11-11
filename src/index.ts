@@ -1,7 +1,6 @@
 export { type Validator } from './validators';
 export {
   Form,
-  useFormState,
   type FormProps,
   type FormRef,
   type FormChildrenOptions,
@@ -18,3 +17,4 @@ export {
   type RepeaterRef,
 } from './repeater';
 export { Debugger } from './debugger';
+export { useFormState } from './hooks';
