@@ -34,7 +34,7 @@ const Input = styled.input<InputProps>`
 const ErrorMessage = styled.p`
   color: ${colors.danger};
   font-size: 0.9rem;
-  margin: 6px 0;
+  margin: 2px 0;
 `;
 
 const Label = styled.label`

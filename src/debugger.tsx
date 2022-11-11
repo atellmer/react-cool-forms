@@ -11,8 +11,8 @@ const Debugger: React.FC<DebuggerProps> = () => {
       display: 'block',
       backgroundColor: '#efefef',
       padding: 16,
-      marginTop: 16,
-      marginBottom: 16,
+      marginTop: 0,
+      marginBottom: 0,
     }),
     [],
   );

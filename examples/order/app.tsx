@@ -1,9 +1,18 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
-import { Form, Field, Repeater, Debugger, type Validator, type RepeaterRef } from 'react-cool-forms';
+import {
+  Form,
+  Field,
+  Repeater,
+  Debugger,
+  type Validator,
+  type RepeaterRef,
+  type OnSubmitOptions,
+} from 'react-cool-forms';
 
 import { masked } from './utils';
 import { TextField } from './components/text-field';
+import { Button } from './components/button';
 
 export type AppProps = {};
 
@@ -14,11 +23,15 @@ const App: React.FC<AppProps> = props => {
     phone: '',
   };
 
+  const handleSubmit = ({ formValue }: OnSubmitOptions<MyForm>) => {
+    alert(JSON.stringify(formValue, null, 2));
+  };
+
   return (
     <Root>
       <Content>
-        <Form initialFormValue={initialFormValue} onSubmit={() => {}}>
-          {() => {
+        <Form initialFormValue={initialFormValue} onSubmit={handleSubmit}>
+          {({ submit, reset }) => {
             return (
               <>
                 <div>
@@ -27,7 +40,7 @@ const App: React.FC<AppProps> = props => {
                     getValue={(x: MyForm) => x.name}
                     setValue={(x, v) => (x.name = v)}
                     enableOnChangeValidation
-                    validators={[required as Validator<string, MyForm>]}>
+                    validators={[required]}>
                     {({ value, error, onChange }) => (
                       <TextField label='Name' value={value} error={error} onChange={onChange} />
                     )}
@@ -37,7 +50,7 @@ const App: React.FC<AppProps> = props => {
                     getValue={(x: MyForm) => x.address}
                     setValue={(x, v) => (x.address = v)}
                     enableOnChangeValidation
-                    validators={[required as Validator<string, MyForm>]}>
+                    validators={[required]}>
                     {({ value, error, onChange }) => (
                       <TextField label='Delivery address' value={value} error={error} onChange={onChange} />
                     )}
@@ -46,9 +59,9 @@ const App: React.FC<AppProps> = props => {
                     name='phone'
                     getValue={(x: MyForm) => x.phone}
                     setValue={(x, v) => (x.phone = v)}
-                    formatter={formatPhone}
                     enableOnChangeValidation
-                    validators={[required as Validator<string, MyForm>]}>
+                    formatter={formatPhone}
+                    validators={[required, isPhone]}>
                     {({ value, error, onChange }) => (
                       <TextField
                         label='Phone number'
@@ -60,6 +73,10 @@ const App: React.FC<AppProps> = props => {
                     )}
                   </Field>
                 </div>
+                <ControlsLayout>
+                  <Button onClick={reset}>Reset</Button>
+                  <Button onClick={submit}>Submit</Button>
+                </ControlsLayout>
                 <Debugger />
               </>
             );
@@ -76,9 +93,14 @@ type MyForm = {
   phone: string;
 };
 
-const required: Validator = {
+const required: Validator<string, MyForm> = {
   method: ({ fieldValue }) => Boolean(fieldValue),
   message: `It's required field`,
+};
+
+const isPhone: Validator<string, MyForm> = {
+  method: ({ fieldValue }) => fieldValue.length === 15,
+  message: `Phone number is incorrect`,
 };
 
 const formatPhone = (prevValue: string, nextValue: string) => {
@@ -100,6 +122,19 @@ const Content = styled.div`
   width: 100%;
   padding: 16px;
   border: 1px solid #7c43bd;
+`;
+
+const ControlsLayout = styled.div`
+  width: 100%;
+  padding: 16px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 16px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
 `;
 
 export { App };
