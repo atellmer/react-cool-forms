@@ -20,7 +20,7 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
     name,
     getValue,
     setValue,
-    validators: sourceValidators = [],
+    validators: fieldValidators = [],
     updatingKey: externalUpdatingKey = '',
     enableOnChangeValidation,
     onValidate,
@@ -36,21 +36,15 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
   const updatingKey = `${externalUpdatingKey}:${valueID}:${error}:${inProcess}`;
 
   useEffect(() => {
-    const createValidators = () => {
-      const validators: Array<SyntheticValidator> = sourceValidators.map(validator => {
-        return {
-          ...validator,
-          name,
-          getValue,
-          nodeRef,
-          onValidate,
-        };
-      });
-
-      return validators;
-    };
-
-    scope.validators = createValidators();
+    scope.validators = fieldValidators.map(validator => {
+      return {
+        ...validator,
+        name,
+        getValue,
+        nodeRef,
+        onValidate,
+      };
+    });
     scope.validators.forEach(x => addValidator(x));
 
     return () => {

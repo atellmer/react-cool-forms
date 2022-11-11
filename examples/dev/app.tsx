@@ -7,7 +7,7 @@ const App: React.FC<AppProps> = props => {
   const repeaterRef = useRef<RepeaterRef<Row>>(null);
   const initialFormValue: TableForm = useMemo(
     () => ({
-      rows: Array(1000)
+      rows: Array(4)
         .fill(null)
         .map((_, idx) => createRow(`Row #${idx}`)),
     }),
@@ -19,7 +19,11 @@ const App: React.FC<AppProps> = props => {
   };
 
   return (
-    <Form name='rootForm' initialFormValue={initialFormValue} onSubmit={x => console.log('submit', x)}>
+    <Form
+      name='rootForm'
+      initialFormValue={initialFormValue}
+      validators={[root]}
+      onSubmit={x => console.log('submit', x)}>
       {({ submit, inProcess, reset }) => {
         console.log('[render Form]');
         return (
@@ -47,7 +51,7 @@ const App: React.FC<AppProps> = props => {
                             name={`rows(${key}).name`}
                             getValue={(row: Row) => row.name}
                             setValue={(row: Row, value: string) => (row.name = value)}
-                            //enableOnChangeValidation
+                            enableOnChangeValidation
                             validators={[required as Validator<string, Row>]}>
                             {({ value, error, onChange }) => {
                               const style = {
@@ -99,7 +103,7 @@ const App: React.FC<AppProps> = props => {
                             name={`rows(${key}).place`}
                             getValue={(row: Row) => row.place}
                             setValue={(row: Row, value: string) => (row.place = value)}
-                            //enableOnChangeValidation
+                            enableOnChangeValidation
                             validators={[required as Validator<string, Row>]}>
                             {({ value, error, onChange }) => {
                               const style = {
@@ -130,7 +134,7 @@ const App: React.FC<AppProps> = props => {
             <br />
             <button onClick={submit}>Submit</button>
             <button onClick={reset}>Reset</button>
-            {/* <Debugger /> */}
+            <Debugger />
           </>
         );
       }}
@@ -141,6 +145,17 @@ const App: React.FC<AppProps> = props => {
 const required: Validator = {
   method: ({ fieldValue }) => Boolean(fieldValue),
   message: 'It is required field',
+};
+
+const root: Validator<TableForm, TableForm> = {
+  method: ({ fieldValue }) => {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve(false);
+      }, 100);
+    });
+  },
+  message: 'Wrong form',
 };
 
 type TableForm = {

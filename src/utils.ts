@@ -1,3 +1,4 @@
+const ROOT_FORM = 'ROOT_FORM';
 const CONTEXT_ERROR = 'Context of Form not found!';
 const HAS_REPEATER_VALIDATION_ERROR = 'HAS_REPEATER_VALIDATION_ERROR';
 
@@ -57,6 +58,7 @@ function transformOjectToArray<T>(obj: Record<string, T>) {
 }
 
 export {
+  ROOT_FORM,
   CONTEXT_ERROR,
   HAS_REPEATER_VALIDATION_ERROR,
   clone,

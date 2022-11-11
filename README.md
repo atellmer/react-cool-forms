@@ -7,12 +7,13 @@ Powerful and flexible forms for React 🎉
 ## Features
 - 🌟 Real flexible API
 - 🙈 UI library agnostic
-- 💫 Dynamic fields
+- 💫 Conditional fields
 - 🎯 Array fields
-- 🚅 Field-level validation
+- 🍓 Form-level validation
+- 🍉 Field-level validation
 - 🔗 Dependent validation
-- 💞 onChange validation support
 - 🙃 Custom validators
+- 💞 onChange validation support
 - 🎀 Async validators support
 - 🚀 Extremal performance
 - 🦥 Small size (6 Kb gzipped)
@@ -98,6 +99,7 @@ type FormProps<T> = {
   initialFormValue: T;
   connectedRef?: React.Ref<FormRef<T>>;
   interruptValidation?: boolean;
+  validators?: Array<Validator<T, T>>;
   onValidate?: (options: OnValidateOptions<T>) => void;
   onChange?: (options: OnChangeOptions<T>) => void;
   onSubmit: (options: OnSubmitOptions<T>) => void;
@@ -107,13 +109,14 @@ type FormProps<T> = {
 FormProps
 | props               | required | description                                                    |
 |---------------------|----------|----------------------------------------------------------------|
-| initialFormValue    | ✅        | Initialization object                                          |
+| initialFormValue    | ✅       | Initialization object                                          |
 | connectedRef        |          | Ref for imperative access to main methods                      |
 | interruptValidation |          | Indicates whether to stop validation on the first error or not |
+| validators          |          | Array of root validators                                       |
 | onValidate          |          | Called every time during validation                            |
 | onChange            |          | Called every time formValue changes                            |
-| onSubmit            | ✅        | Called after successful validation of the entire form          |
-| children            | ✅        | Render function that takes options (FormChildrenOptions)                                               |
+| onSubmit            | ✅       | Called after successful validation of the entire form          |
+| children            | ✅       | Render function that takes options (FormChildrenOptions)       |
 
 ```tsx
 type FormRef<T> = {
@@ -206,7 +209,7 @@ FieldProps
 type OnValidateFieldOptions<T> = {
   isValid: boolean;
   fieldValue: T;
-  nodeRef: RefObject<any> | null;
+  nodeRef: React.RefObject<any> | null;
 };
 ```
 

@@ -2,6 +2,7 @@ import React, { useMemo, useState, useImperativeHandle, useEffect } from 'react'
 
 import { FormContext, type FormContextValue } from './context';
 import {
+  ROOT_FORM,
   HAS_REPEATER_VALIDATION_ERROR,
   clone,
   detecIsFunction,
@@ -10,14 +11,15 @@ import {
   detectIsDeepEqual,
   removePropertyValues,
 } from './utils';
-import { type SyntheticValidator } from './validators';
+import { type SyntheticValidator, type Validator } from './validators';
 import { useEvent, useUpdate } from './hooks';
 
 export type FormProps<T extends object> = {
-  name?: string; // for internal use
+  name?: string;
   initialFormValue: T;
   connectedRef?: React.Ref<FormRef<T>>;
   interruptValidation?: boolean;
+  validators?: Array<Validator<T, T>>;
   children: (options: FormChildrenOptions<T>) => React.ReactElement;
   onValidate?: (options: OnValidateOptions<T>) => void;
   onChange?: (options: OnChangeOptions<T>) => void;
@@ -31,6 +33,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     name,
     initialFormValue,
     connectedRef,
+    validators: formValidators = [],
     interruptValidation,
     children,
     onValidate,
@@ -44,6 +47,22 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const [inProcess, setInProcess] = useState(false);
   const scope = useMemo(() => ({ formValue: clone(initialFormValue) }), []);
   const formValue = scope.formValue;
+
+  useEffect(() => {
+    const validators: Array<SyntheticValidator> = formValidators.map(validator => {
+      return {
+        ...validator,
+        name: name || ROOT_FORM,
+        getValue: x => x,
+      };
+    });
+
+    validators.forEach(x => addValidator(x));
+
+    return () => {
+      validators.forEach(x => removeValidator(x));
+    };
+  }, []);
 
   useEffect(() => {
     return () => detecIsFunction(onUnmount) && onUnmount();
