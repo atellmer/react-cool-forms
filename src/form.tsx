@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useImperativeHandle, useEffect } from 'react';
 
+import { type SyntheticValidator, type Validator } from './types';
 import { FormContext, type FormContextValue } from './context';
 import {
   ROOT_FORM,
@@ -11,7 +12,6 @@ import {
   detectIsDeepEqual,
   removePropertyValues,
 } from './utils';
-import { type SyntheticValidator, type Validator } from './validators';
 import { useEvent, useUpdate } from './hooks';
 
 export type FormProps<T extends object> = {

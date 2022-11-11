@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useMemo, useImperativeHandle } from 'react';
 
+import { type SyntheticValidator } from './types';
 import { useFormContext } from './context';
 import { Form, type OnChangeOptions, type FormRef, type FormChildrenOptions } from './form';
 import { HAS_REPEATER_VALIDATION_ERROR, detecIsFunction, dummy, transformOjectToArray } from './utils';
-import { type SyntheticValidator } from './validators';
 import { useEvent } from './hooks';
 
 export type RepeaterProps<T extends object, S extends object> = {

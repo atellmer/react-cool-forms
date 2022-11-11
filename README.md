@@ -15,6 +15,7 @@ Powerful and flexible forms for React 🎉
 - 🙃 Custom validators
 - 💞 onChange validation support
 - 🎀 Async validators support
+- ⚡️ Output formatters support
 - 🚀 Extremal performance
 - 🦥 Small size (6 Kb gzipped)
 - ✔️ No dependencies
@@ -23,7 +24,7 @@ Powerful and flexible forms for React 🎉
   Soon
 
 ## Motivation
-I have been looking for a form validation library for react in the npm repository for a long time, but all of them did not suit me for one reason or another. First of all, I lacked the flexibility of the API of these libraries. Most of them are based on the use of simple HTML inputs and the like. But writing complex forms is not limited to HTML inputs or checkboxes or something else. Having a lot of experience with forms at my former company, I decided to write this library. The main message: any arbitrarily complex component that implements the value / onChange interface can be a full member of the form and pass the required validation. I also combined the classic Observer pattern along with the React Context and React memoization to get the best input performance without debounce technique (tested 3000 inputs in one form).
+I have been looking for a form validation library for React in the npm repository for a long time, but all of them did not suit me for one reason or another. First of all, I lacked the flexibility of the API of these libraries. Most of them are based on the use of simple HTML inputs and the like. But writing complex forms is not limited to HTML inputs or checkboxes or something else. Having a lot of experience with forms at my former company, I decided to write this library. The main message: any arbitrarily complex component that implements the value / onChange interface can be a full member of the form and pass the required validation. I also combined the classic Observer pattern along with the React Context and React memoization to get the best input performance without debounce technique (tested 3000 inputs in one form).
 
 ## Installation
 npm:
@@ -77,7 +78,15 @@ const setFirstName = (form, value) => (form.firstName = value);
 ## API
 
 ```tsx
-import { Form, Field, Repeater, Debugger, useFormState, type Validator } from 'react-cool-forms';
+import {
+  Form,
+  Field,
+  Repeater,
+  Debugger,
+  useFormState,
+  type Validator,
+  type Formatter,
+} from 'react-cool-forms';
 ```
 
 ### Form
@@ -109,14 +118,14 @@ type FormProps<T> = {
 FormProps
 | props               | required | description                                                    |
 |---------------------|----------|----------------------------------------------------------------|
-| initialFormValue    | ✅       | Initialization object                                          |
-| connectedRef        |          | Ref for imperative access to main methods                      |
-| interruptValidation |          | Indicates whether to stop validation on the first error or not |
-| validators          |          | Array of root validators                                       |
-| onValidate          |          | Called every time during validation                            |
-| onChange            |          | Called every time formValue changes                            |
-| onSubmit            | ✅       | Called after successful validation of the entire form          |
-| children            | ✅       | Render function that takes options (FormChildrenOptions)       |
+| initialFormValue    | ✅       | Initialization object.                                          |
+| connectedRef        |          | Ref for imperative access to main methods.                      |
+| interruptValidation |          | Indicates whether to stop validation on the first error or not. |
+| validators          |          | Array of root validators.                                       |
+| onValidate          |          | Called every time during validation.                            |
+| onChange            |          | Called every time formValue changes.                            |
+| onSubmit            | ✅       | Called after successful validation of the entire form.          |
+| children            | ✅       | Render function that takes options (FormChildrenOptions).       |
 
 ```tsx
 type FormRef<T> = {
@@ -141,12 +150,12 @@ type FormChildrenOptions<T> = {
 FormChildrenOptions
 | prop      | description                                                                                                  |
 |-----------|--------------------------------------------------------------------------------------------------------------|
-| formValue | Actual value of form                                                                                         |
-| errors    | Object with all validation errors                                                                            |
-| inProcess | Shows if we are in the process of validation                                                                 |
-| validate  | Manual validation start if you need it. For example, validation before moving to the next step of the wizard |
-| submit    | Call it for validation and submit form                                                                       |
-| reset     | Reset formValue to initialFormValue                                                                          |
+| formValue | Actual value of form.                                                                                         |
+| errors    | Object with all validation errors.                                                                            |
+| inProcess | Shows if we are in the process of validation.                                                                 |
+| validate  | Manual validation start if you need it. For example, validation before moving to the next step of the wizard. |
+| submit    | Call it for validation and submit form.                                                                       |
+| reset     | Reset formValue to initialFormValue.                                                                          |
 
 ```tsx
 type OnValidateOptions<T> = {
@@ -186,6 +195,7 @@ type FieldProps<T, S> = {
   name: string;
   getValue: (formValue: S) => T;
   setValue: (formValue: S, fieldValue: T) => void;
+  formatter?: Formatter<T>;
   validators?: Array<Validator<T, S>>;
   updatingKey?: string | number;
   enableOnChangeValidation?: boolean;
@@ -196,14 +206,19 @@ type FieldProps<T, S> = {
 FieldProps
 | prop                     | required | description                                                                                                                                                                     |
 |--------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| name                     | ✅        | A label for correctly adding an error message to the error object. It should be unique within the form                                                                                                                |
-| getValue                 | ✅        | Value access function inside formValue                                                                                                                                          |
-| setValue                 | ✅        | Function to set a new value                                                                                                                                                     |
-| validators               |          | An array of validators that will participate in the validation process of this component                                                                                        |
+| name                     | ✅        | A label for correctly adding an error message to the error object. It should be unique within the form.                                                                         |
+| getValue                 | ✅        | Value access function inside formValue.                                                                                                                                          |
+| setValue                 | ✅        | Function to set a new value.                                                                                                                                                     |
+| formatter                |          | A function that formats value. Allows you to implement input masks or otherwise transform the output. It takes previous value and next value as argument.                         |
+| validators               |          | An array of validators that will participate in the validation process of this component.                                                                                        |
 | updatingKey              |          | By default, the rendering of a child component in a Field is memoized for performance reasons. You can add this key to let the component know when you still want to update it. |
-| enableOnChangeValidation |          | Enables validation on the onChange event                                                                                                                                        |
-| onValidate               |          | Fires every time a field is validated                                                                                                                                           |
-| children                 | ✅        | Render function that takes options (FieldChildrenOptions)                                                                                                                                                                 |
+| enableOnChangeValidation |          | Enables validation on the onChange event.                                                                                                                                        |
+| onValidate               |          | Fires every time a field is validated.                                                                                                                                           |
+| children                 | ✅       | Render function that takes options. (FieldChildrenOptions).                                                                                                                       |
+
+```tsx
+type Formatter<T> = (prevValue: T, nextValue: T) => T;
+```
 
 ```tsx
 type OnValidateFieldOptions<T> = {
@@ -224,13 +239,14 @@ type FieldChildrenOptions<T> = {
 };
 ```
 FieldChildrenOptions
-| name     | required | The label that was passed to the Field                                                                                                                                                                    |
+| prop     | required | description                                                                                                                                                                                              |
 |----------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| value    | ✅        | Field value. Must be passed to the component that will trigger the value update, such as an input                                                                                                         |
-| error    | optional | Text error if field validation fails                                                                                                                                                                      |
-| nodeRef  |          | You can pass a nodeRef to your input if you want to implement something like scrolling to an element that didn't pass validation. This ref will later be passed to the onValidate callback for this Field |
-| validate |          | Allows you to call the validation of this field, for example, on the onBlur event                                                                                                                         |
-| onChange | ✅        | Must be passed to the component that will trigger the value update, such as an input                                                                                                                      |
+| name     |          | The label that was passed to the Field.                                                                                                                                                                   |
+| value    | ✅       | Field value. Must be passed to the component that will trigger the value update, such as an input.                                                                                                         |
+| error    | optional | Text error if field validation fails.                                                                                                                                                                      |
+| nodeRef  |          | You can pass a nodeRef to your input if you want to implement something like scrolling to an element that didn't pass validation. This ref will later be passed to the onValidate callback for this Field. |
+| validate |          | Allows you to call the validation of this field, for example, on the onBlur event.                                                                                                                         |
+| onChange | ✅       | Must be passed to the component that will trigger the value update, such as an input.                                                                                                                      |
 
 ### Validator
 
@@ -339,15 +355,15 @@ type RepeaterProps<T, S> = {
 RepeaterProps
 | prop                | required | description                                                                                                             |
 |---------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| name                | ✅        | A label for correctly adding an error message to the error object. It should be unique within the form                  |
-| connectedRef        |           | Ref for imperative access to list modification methods (append, prepend, insert, swap, remove)                                                                                                                                                     |
-| getValue            | ✅        | Value access function inside formValue                                                                                  |
-| setValue            | ✅        | Function to set a new value                                                                                             |
+| name                | ✅        | A label for correctly adding an error message to the error object. It should be unique within the form.                  |
+| connectedRef        |           | Ref for imperative access to list modification methods (append, prepend, insert, swap, remove).                                 |
+| getValue            | ✅        | Value access function inside formValue.                                                                                  |
+| setValue            | ✅        | Function to set a new value.                                                                                             |
 | getKey              | ✅        | A function to return the unique ID of an object. Needed so that React knows when it should unmount the node completely. |
-| interruptValidation |          | Indicates whether to stop validation on the first error or not                                                          |
-| triggerPosition    |          | Specifies where to render form control buttons: before or after the list                                                |
+| interruptValidation |          | Indicates whether to stop validation on the first error or not.                                                          |
+| triggerPosition    |          | Specifies where to render form control buttons: before or after the list.                                                |
 | renderTrigger       |          | A function that that takes options (RenderTriggerOptions) and should render buttons for adding elements to an array.                                                  |
-| children            | ✅        | Render function that takes options (RepeaterChildrenOptions)                                                                                                         |
+| children            | ✅        | Render function that takes options (RepeaterChildrenOptions).                                                                                                         |
 
 ```tsx
 type RenderTriggerOptions<T> = {
@@ -363,13 +379,13 @@ type RenderTriggerOptions<T> = {
 RenderTriggerOptions
 | prop      | description                                                                              |
 |-----------|------------------------------------------------------------------------------------------|
-| inProcess | Shows if we are in the process of validation                                             |
-| size      | Number of elements in the current array                                                  |
-| append    | Allows you to add an element to the end of the list                                      |
-| prepend   | Allows you to add an element to the beginning of the list                                |
-| insert    | Allows you to add an element at the specified index                                      |
-| swap      | Allows swapping 2 list items                                                             |
-| remove    | Allows you to remove an element from the list at the specified index or array of indices |
+| inProcess | Shows if we are in the process of validation.                                             |
+| size      | Number of elements in the current array.                                                  |
+| append    | Allows you to add an element to the end of the list.                                      |
+| prepend   | Allows you to add an element to the beginning of the list.                                |
+| insert    | Allows you to add an element at the specified index.                                      |
+| swap      | Allows swapping 2 list items.                                                             |
+| remove    | Allows you to remove an element from the list at the specified index or array of indices. |
 
 Note that some list management methods take a shouldFocus parameter. If this parameter is true, then when rendering the list, you will need to pass it as an input to the autoFocus property.
 

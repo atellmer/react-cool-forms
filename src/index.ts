@@ -1,4 +1,4 @@
-export { type Validator } from './validators';
+export { type Validator, type Formatter } from './types';
 export {
   Form,
   type FormProps,

@@ -22,3 +22,5 @@ export type OnValidateFieldOptions<T> = {
   isValid: boolean;
   fieldValue: T;
 };
+
+export type Formatter<T> = (prevValue: T, nextValue: T) => T;
