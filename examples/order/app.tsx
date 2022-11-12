@@ -8,6 +8,7 @@ import {
   type Validator,
   type RepeaterRef,
   type OnSubmitOptions,
+  type FormatterOptions,
 } from 'react-cool-forms';
 
 import { masked } from './utils';
@@ -40,10 +41,9 @@ const App: React.FC<AppProps> = props => {
                     getValue={(x: MyForm) => x.name}
                     setValue={(x, v) => (x.name = v)}
                     enableOnChangeValidation
-                    onValidate={({ nodeRef, isValid }) => console.log(isValid, nodeRef)}
                     validators={[required]}>
-                    {({ value, error, nodeRef, onChange }) => (
-                      <TextField ref={nodeRef} label='Name' value={value} error={error} onChange={onChange} />
+                    {({ value, error, onChange }) => (
+                      <TextField label='Name' value={value} error={error} onChange={onChange} />
                     )}
                   </Field>
                   <Field
@@ -63,8 +63,9 @@ const App: React.FC<AppProps> = props => {
                     enableOnChangeValidation
                     formatter={formatPhone}
                     validators={[required, isPhone]}>
-                    {({ value, error, onChange }) => (
+                    {({ value, error, nodeRef, onChange }) => (
                       <TextField
+                        ref={nodeRef}
                         label='Phone number'
                         placeholder='+0-000-000-0000'
                         value={value}
@@ -104,7 +105,8 @@ const isPhone: Validator<string, MyForm> = {
   message: `Phone number is incorrect`,
 };
 
-const formatPhone = (prevValue: string, nextValue: string) => {
+const formatPhone = (options: FormatterOptions<string, HTMLInputElement>) => {
+  const { prevValue, nextValue, node } = options;
   const mask = ['+', /\d/, '-', /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, /\d/];
 
   return masked({ mask, prevValue, nextValue });

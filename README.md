@@ -209,7 +209,7 @@ FieldProps
 | name                     | ✅        | A label for correctly adding an error message to the error object. It should be unique within the form.                                                                         |
 | getValue                 | ✅        | Value access function inside formValue.                                                                                                                                          |
 | setValue                 | ✅        | Function to set a new value.                                                                                                                                                     |
-| formatter                |          | A function that formats value. Allows you to implement input masks or otherwise transform the output. It takes previous value and next value as argument.                         |
+| formatter                |          | A function that formats value.                                                                               |
 | validators               |          | An array of validators that will participate in the validation process of this component.                                                                                        |
 | updatingKey              |          | By default, the rendering of a child component in a Field is memoized for performance reasons. You can add this key to let the component know when you still want to update it. |
 | enableOnChangeValidation |          | Enables validation on the onChange event.                                                                                                                                        |
@@ -217,14 +217,10 @@ FieldProps
 | children                 | ✅       | Render function that takes options. (FieldChildrenOptions).                                                                                                                       |
 
 ```tsx
-type Formatter<T> = (prevValue: T, nextValue: T) => T;
-```
-
-```tsx
-type OnValidateFieldOptions<T> = {
+export type OnValidateFieldOptions<T, N extends HTMLElement> = {
+  nodeRef: React.RefObject<N> | null;
   isValid: boolean;
   fieldValue: T;
-  nodeRef: React.RefObject<any> | null;
 };
 ```
 
@@ -253,9 +249,8 @@ FieldChildrenOptions
 A validator is a simple object that contains three fields: a method, a message and an innerrupt. If you want to implement asynchronous validation, for example for a request to the server, then in the validation method, you must return a promise. You can also make validation dependent on other fields, due to the fact that the validation method accepts not only the value of one validated field, but also the value of the entire form. Interrupt 
 
 ```tsx
-import { type Validator } from 'react-cool-forms';
+import { type Validator, type ValidatorMethodOptions } from 'react-cool-forms';
 ```
-
 
 ```tsx
 type Validator<T, S> = {
@@ -288,6 +283,48 @@ const checkLogin = {
     })
   },
   message: 'This login already exists',
+};
+```
+
+### Formatter
+
+```tsx
+import { type Formatter, type FormatterOptions } from 'react-cool-forms';
+```
+
+A formatter is a function that formats value. Allows you to implement input masks or otherwise transform the output. It takes options with previous value, next value and node.
+
+```tsx
+<Field
+  name='nickname'
+  getValue={x => x.nickname}
+  setValue={(x, v) => (x.nickname = v)}
+  formatter={formatUppercase}>
+  {({ value, nodeRef, onChange }) => (
+    // Pass a nodeRef if you need a node reference in the format function to move the caret
+    <TextField
+      ref={nodeRef}
+      label='Your nickname'
+      value={value}
+      onChange={onChange}
+    />
+  )}
+</Field>
+
+const formatUppercase = (options: FormatterOptions<string, HTMLInputElement>) => {
+  const { prevValue, nextValue, node } = options;
+
+ return nextValue.toUpperCase();
+};
+```
+
+```tsx
+type Formatter<T, N extends HTMLElement> = (options: FormatterOptions<T, N>) => T;
+
+type FormatterOptions<T, N> = {
+  prevValue: T;
+  nextValue: T;
+  node: N | null;
 };
 ```
 

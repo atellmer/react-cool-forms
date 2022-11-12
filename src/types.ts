@@ -1,4 +1,4 @@
-import { type RefObject } from 'react';
+import React from 'react';
 
 export type Validator<T = unknown, S extends object = any> = {
   method: (options: ValidatorMethodOptions<T, S>) => boolean | Promise<boolean>;
@@ -13,15 +13,21 @@ export type SyntheticValidator<T = unknown, S extends object = any> = {
 } & Validator &
   Partial<Pick<OnValidateFieldOptions<T>, 'nodeRef'>>;
 
-type ValidatorMethodOptions<T, S extends object> = {
+export type ValidatorMethodOptions<T, S extends object> = {
   fieldValue: T;
   formValue: S;
 };
 
-export type OnValidateFieldOptions<T> = {
-  nodeRef: RefObject<any> | null;
+export type OnValidateFieldOptions<T, N extends HTMLElement = any> = {
+  nodeRef: React.RefObject<N> | null;
   isValid: boolean;
   fieldValue: T;
 };
 
-export type Formatter<T> = (prevValue: T, nextValue: T) => T;
+export type Formatter<T, N extends HTMLElement = any> = (options: FormatterOptions<T, N>) => T;
+
+export type FormatterOptions<T, N> = {
+  prevValue: T;
+  nextValue: T;
+  node: N | null;
+};

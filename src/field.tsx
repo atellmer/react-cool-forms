@@ -34,7 +34,7 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
   const nodeRef = useRef<HTMLElement>(null);
   const error = errors ? errors[name] || null : null;
   const scope = useMemo<FieldScope<T>>(() => ({ validators: [] }), []);
-  const formattedValue = useMemo(() => formatter(value, value), [value]);
+  const formattedValue = useMemo(() => formatter({ prevValue: value, nextValue: value, node: null }), [value]);
   const valueID = useMemo(() => getNextValueID(), [formattedValue]);
   const updatingKey = `${externalUpdatingKey}:${valueID}:${error}:${inProcess}`;
 
@@ -64,7 +64,11 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
 
   const handleChange = useEvent((value: T) => {
     const { formValue, notify } = formState;
-    const newFormattedValue = formatter(formattedValue, value);
+    const newFormattedValue = formatter({
+      prevValue: formattedValue,
+      nextValue: value,
+      node: nodeRef.current,
+    });
 
     setValue(formValue, newFormattedValue);
     notify(formValue);
@@ -97,7 +101,7 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
 const FieldComponent: React.FC<FieldProps<unknown, {}>> = Field;
 
 FieldComponent.defaultProps = {
-  formatter: (p, n) => n,
+  formatter: ({ nextValue }) => nextValue,
   onValidate: () => {},
 };
 
