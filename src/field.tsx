@@ -62,18 +62,12 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
     };
   }, []);
 
-  const handleChange = useEvent((value: T) => {
+  const notify = useEvent((value: T) => {
     const { formValue, notify } = formState;
-    const newFormattedValue = formatter({
-      prevValue: formattedValue,
-      nextValue: value,
-      node: nodeRef.current,
-    });
 
-    setValue(formValue, newFormattedValue);
+    setValue(formValue, value);
     notify(formValue);
     update();
-    enableOnChangeValidation && (async () => await validate())();
   });
 
   const validate = useEvent(async (): Promise<boolean> => {
@@ -85,6 +79,17 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
     return isValid;
   });
 
+  const handleChange = useEvent((value: T) => {
+    const newFormattedValue = formatter({
+      prevValue: formattedValue,
+      nextValue: value,
+      node: nodeRef.current,
+    });
+
+    notify(newFormattedValue);
+    enableOnChangeValidation && (async () => await validate())();
+  });
+
   return (
     <FieldInner
       {...props}
@@ -92,6 +97,7 @@ function Field<T, S extends object>(props: FieldProps<T, S>): React.ReactElement
       nodeRef={nodeRef}
       value={formattedValue}
       error={error}
+      notify={notify}
       validate={validate}
       onChange={handleChange}
     />
@@ -116,9 +122,9 @@ export type FieldInnerProps<T, S extends object> = {
 
 const FieldInner = memo(
   function <T, S extends object>(props: FieldInnerProps<T, S>): React.ReactElement {
-    const { name, nodeRef, value, error, children, validate, onChange } = props;
+    const { name, nodeRef, value, error, children, validate, notify, onChange } = props;
 
-    return children({ name, nodeRef, value, error, validate, onChange });
+    return children({ name, nodeRef, value, error, validate, notify, onChange });
   },
   (prevProps, nextProps) => prevProps.updatingKey === nextProps.updatingKey,
 );
@@ -128,6 +134,7 @@ export type FieldChildrenOptions<T> = {
   value: T;
   error: string | null;
   validate: () => Promise<boolean>;
+  notify: (value: T) => void;
   onChange: (value: T) => void;
 } & Pick<OnValidateFieldOptions<T>, 'nodeRef'>;
 

@@ -11,7 +11,7 @@ import {
   type FormatterOptions,
 } from 'react-cool-forms';
 
-import { masked } from './utils';
+import { masked, formatCurrency as formatCurrencyFn, transformCurrencyStringToNumber } from './utils';
 import { TextField } from './components/text-field';
 import { Button } from './components/button';
 
@@ -22,6 +22,7 @@ const App: React.FC<AppProps> = props => {
     name: 'Alex',
     address: '',
     phone: '',
+    tips: 0,
   };
 
   const handleSubmit = ({ formValue }: OnSubmitOptions<MyForm>) => {
@@ -74,6 +75,23 @@ const App: React.FC<AppProps> = props => {
                       />
                     )}
                   </Field>
+                  <Field
+                    name='tips'
+                    getValue={(x: MyForm) => x.tips}
+                    setValue={(x, v) => (x.tips = v as number)}
+                    formatter={formatCurrency}>
+                    {({ value, error, notify, onChange }) => (
+                      <TextField
+                        label='Tips'
+                        value={value}
+                        error={error}
+                        onChange={onChange}
+                        onBlur={() => {
+                          notify(transformCurrencyStringToNumber(value));
+                        }}
+                      />
+                    )}
+                  </Field>
                 </div>
                 <ControlsLayout>
                   <Button onClick={reset}>Reset</Button>
@@ -93,6 +111,7 @@ type MyForm = {
   name: string;
   address: string;
   phone: string;
+  tips: number;
 };
 
 const required: Validator<string, MyForm> = {
@@ -106,10 +125,16 @@ const isPhone: Validator<string, MyForm> = {
 };
 
 const formatPhone = (options: FormatterOptions<string, HTMLInputElement>) => {
-  const { prevValue, nextValue, node } = options;
+  const { prevValue, nextValue } = options;
   const mask = ['+', /\d/, '-', /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, /\d/];
 
   return masked({ mask, prevValue, nextValue });
+};
+
+const formatCurrency = (options: FormatterOptions<string | number, HTMLInputElement>) => {
+  const { nextValue } = options;
+
+  return formatCurrencyFn(nextValue);
 };
 
 const Root = styled.div`

@@ -9,10 +9,11 @@ export type TextFieldProps<T = string | number> = {
   label?: string;
   placeholder?: string;
   onChange: (value: T) => void;
+  onBlur?: () => void;
 };
 
 const TextField = forwardRef<HTMLInputElement, TextFieldProps>((props, ref) => {
-  const { value, type = 'text', error, label, placeholder, onChange } = props;
+  const { value, type = 'text', error, label, placeholder, onChange, onBlur } = props;
   const hasError = Boolean(error);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,6 +33,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>((props, ref) => {
           hasError={hasError}
           placeholder={placeholder}
           onChange={handleChange}
+          onBlur={onBlur}
         />
       </Label>
       {error && <ErrorMessage>{error}</ErrorMessage>}
