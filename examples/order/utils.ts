@@ -5,40 +5,19 @@ type MaskedOptions = {
 };
 
 function masked(options: MaskedOptions) {
-  const { mask, prevValue = '', nextValue = '' } = options;
-  const splitted = nextValue.split('');
+  const { prevValue = '', nextValue = '', mask } = options;
+
+  if (prevValue.length >= nextValue.length) return nextValue;
+
   const values = [];
   let idx = 0;
 
-  const greed = (idx: number) => {
-    const isForward = prevValue.length < nextValue.length;
-
-    if (isForward && typeof mask[idx + 1] === 'string' && !splitted[idx + 1]) {
-      values.push(mask[idx + 1]);
-      greed(idx + 1);
-
-      return true;
-    }
-
-    return false;
-  };
-
-  for (const part of splitted) {
-    if (mask[idx] instanceof RegExp) {
-      const regexp = mask[idx] as RegExp;
-
-      if (regexp.test(part)) {
-        values.push(part);
-
-        if (greed(idx)) {
-          break;
-        }
-      } else {
-        break;
-      }
-    } else if (typeof mask[idx] === 'string') {
-      if (mask[idx] === part) {
-        values.push(part);
+  for (const token of mask) {
+    if (typeof token === 'string') {
+      values.push(token);
+    } else if (token instanceof RegExp) {
+      if (token.test(nextValue[idx])) {
+        values.push(nextValue[idx]);
       } else {
         break;
       }
@@ -47,13 +26,9 @@ function masked(options: MaskedOptions) {
     idx++;
   }
 
-  if (nextValue && values.length === 0 && typeof mask[0] === 'string') {
-    values.push(mask[0]);
-  }
+  const formattedValue = values.join('');
 
-  const maskedValue = values.join('');
-
-  return maskedValue;
+  return formattedValue;
 }
 
 export { masked };
