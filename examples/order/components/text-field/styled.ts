@@ -5,8 +5,9 @@ const colors = {
 };
 
 const Root = styled.div`
+  position: relative;
   width: 100%;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 
   &:last-child {
     margin-bottom: 0;

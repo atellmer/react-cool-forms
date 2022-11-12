@@ -13,6 +13,7 @@ import {
 
 import { masked, formatCurrency as formatCurrencyFn, transformCurrencyStringToNumber } from './utils';
 import { TextField } from './components/text-field';
+import { Checkbox } from './components/checkbox';
 import { Button } from './components/button';
 
 export type AppProps = {};
@@ -22,7 +23,8 @@ const App: React.FC<AppProps> = props => {
     name: 'Alex',
     address: '',
     phone: '',
-    tips: 0,
+    payTip: false,
+    tip: 0,
   };
 
   const handleSubmit = ({ formValue }: OnSubmitOptions<MyForm>) => {
@@ -44,7 +46,7 @@ const App: React.FC<AppProps> = props => {
                     enableOnChangeValidation
                     validators={[required]}>
                     {({ value, error, onChange }) => (
-                      <TextField label='Name' value={value} error={error} onChange={onChange} />
+                      <TextField label='Name 😊' value={value} error={error} onChange={onChange} />
                     )}
                   </Field>
                   <Field
@@ -76,20 +78,37 @@ const App: React.FC<AppProps> = props => {
                     )}
                   </Field>
                   <Field
-                    name='tips'
-                    getValue={(x: MyForm) => x.tips}
-                    setValue={(x, v) => (x.tips = v as number)}
-                    formatter={formatCurrency}>
-                    {({ value, error, notify, onChange }) => (
-                      <TextField
-                        label='Tips'
-                        value={value}
-                        error={error}
-                        onChange={onChange}
-                        onBlur={() => {
-                          notify(transformCurrencyStringToNumber(value));
-                        }}
-                      />
+                    name='payTip'
+                    getValue={(x: MyForm) => x.payTip}
+                    setValue={(x, v) => ((x.payTip = v), (x.tip = v ? x.tip : 0))}>
+                    {({ value, onChange }) => (
+                      <>
+                        <Checkbox label=' Pay tip?' value={value} onChange={onChange} />
+                        {value && (
+                          <Field
+                            name='tip'
+                            getValue={(x: MyForm) => x.tip}
+                            setValue={(x, v) => (x.tip = v as number)}
+                            enableOnChangeValidation
+                            formatter={formatCurrency}
+                            validators={[required, isSmallTip]}>
+                            {({ value, error, notify, onChange }) => (
+                              <TextField
+                                label='Tip'
+                                value={value}
+                                error={error}
+                                onChange={onChange}
+                                onFocus={() => {
+                                  transformCurrencyStringToNumber(value) === 0 && notify('');
+                                }}
+                                onBlur={() => {
+                                  notify(transformCurrencyStringToNumber(value));
+                                }}
+                              />
+                            )}
+                          </Field>
+                        )}
+                      </>
                     )}
                   </Field>
                 </div>
@@ -111,7 +130,8 @@ type MyForm = {
   name: string;
   address: string;
   phone: string;
-  tips: number;
+  payTip: boolean;
+  tip: number;
 };
 
 const required: Validator<string, MyForm> = {
@@ -122,6 +142,11 @@ const required: Validator<string, MyForm> = {
 const isPhone: Validator<string, MyForm> = {
   method: ({ fieldValue }) => fieldValue.length === 15,
   message: `Phone number is incorrect`,
+};
+
+const isSmallTip: Validator<number | string, MyForm> = {
+  method: ({ fieldValue }) => transformCurrencyStringToNumber(fieldValue) < 20,
+  message: `This tip is too big`,
 };
 
 const formatPhone = (options: FormatterOptions<string, HTMLInputElement>) => {
@@ -149,7 +174,7 @@ const Root = styled.div`
 const Content = styled.div`
   width: 100%;
   padding: 16px;
-  border: 1px solid #7c43bd;
+  border: 2px solid #8eacbb;
 `;
 
 const ControlsLayout = styled.div`

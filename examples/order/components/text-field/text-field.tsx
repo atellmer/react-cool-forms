@@ -9,11 +9,12 @@ export type TextFieldProps<T = string | number> = {
   label?: string;
   placeholder?: string;
   onChange: (value: T) => void;
+  onFocus?: () => void;
   onBlur?: () => void;
 };
 
 const TextField = forwardRef<HTMLInputElement, TextFieldProps>((props, ref) => {
-  const { value, type = 'text', error, label, placeholder, onChange, onBlur } = props;
+  const { value, type = 'text', error, label, placeholder, onChange, onFocus, onBlur } = props;
   const hasError = Boolean(error);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,7 +26,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>((props, ref) => {
   return (
     <Root>
       <Label>
-        {label ? `${label}:` : null}
+        {label ? <span style={{ display: 'block', marginBottom: 2 }}>{label}:</span> : null}
         <Input
           ref={ref}
           type={type}
@@ -33,6 +34,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>((props, ref) => {
           hasError={hasError}
           placeholder={placeholder}
           onChange={handleChange}
+          onFocus={onFocus}
           onBlur={onBlur}
         />
       </Label>
