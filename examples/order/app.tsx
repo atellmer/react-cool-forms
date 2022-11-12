@@ -33,7 +33,7 @@ const App: React.FC<AppProps> = props => {
     <Root>
       <Content>
         <Form initialFormValue={initialFormValue} onSubmit={handleSubmit}>
-          {({ submit, reset }) => {
+          {({ formValue, submit, reset }) => {
             return (
               <>
                 <div>

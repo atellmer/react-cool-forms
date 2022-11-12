@@ -505,6 +505,20 @@ const {
 } = useFormState();
 ```
 
+You can use this hook to detect changes in the entire form or in part of it by setting the detectChanges function. Now your component will only render when that piece of data in the form changes.
+
+```tsx
+useFormState<MyForm, string>({
+  detectChanges: x => x.phone,
+});
+```
+
+```tsx
+type UseFormStateOptions<T, S> = {
+  detectChanges: (formValue: T) => S;
+};
+```
+
 Be sure to look at examples of using various APIs in the examples folder.
 
 # LICENSE

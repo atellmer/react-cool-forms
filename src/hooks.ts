@@ -21,7 +21,14 @@ function useUpdate() {
   return { update };
 }
 
-function useFormState<T extends object>() {
+type UseFormStateOptions<T, S> = {
+  detectChanges: (formValue: T) => S;
+};
+
+function useFormState<T extends object, S = any>(
+  options: UseFormStateOptions<T, S> = { detectChanges: x => x as unknown as S },
+) {
+  const { detectChanges } = options;
   const { state } = useFormContext<T>();
   const { update } = useUpdate();
   const {
@@ -38,11 +45,18 @@ function useFormState<T extends object>() {
     reset,
   } = state;
   const validate = useEvent((formValue: T) => sourceValidate(formValue));
+  const lastValue = detectChanges(formValue);
+
+  const updateWhenChange = useEvent(() => {
+    if (detectChanges(state.formValue) !== lastValue) {
+      update();
+    }
+  });
 
   useEffect(() => {
-    addSubscriber(update);
+    addSubscriber(updateWhenChange);
 
-    return () => removeSubscriber(update);
+    return () => removeSubscriber(updateWhenChange);
   }, []);
 
   return {
