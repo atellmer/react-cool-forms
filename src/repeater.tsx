@@ -12,24 +12,14 @@ export type RepeaterProps<T extends object, S extends object> = {
   getValue: (formValue: S) => Array<T>;
   setValue: (formValue: S, fieldValue: Array<T>) => void;
   getKey: (formValue: T) => Key;
-  interruptValidation?: boolean;
+  interrupt?: boolean;
   triggerPosition?: 'before' | 'after';
   renderTrigger?: (options: RenderTriggerOptions<T>) => React.ReactElement;
   children: (options: RepeaterChildrenOptions<T>) => React.ReactElement;
 };
 
 function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>): React.ReactElement {
-  const {
-    name,
-    connectedRef,
-    getValue,
-    setValue,
-    getKey,
-    interruptValidation,
-    renderTrigger,
-    triggerPosition,
-    children,
-  } = props;
+  const { name, connectedRef, getValue, setValue, getKey, interrupt, renderTrigger, triggerPosition, children } = props;
   const { state: formState } = useFormContext<S>();
   const { formValue, modify, notify, inProcess, addValidator, removeValidator, addResetFn, removeResetFn, lift } =
     formState;
@@ -47,7 +37,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
 
         results.push(isValid);
 
-        if (!isValid && interruptValidation) {
+        if (!isValid && interrupt) {
           break;
         }
       }

@@ -3,6 +3,7 @@ import { type RefObject } from 'react';
 export type Validator<T = unknown, S extends object = any> = {
   method: (options: ValidatorMethodOptions<T, S>) => boolean | Promise<boolean>;
   message: string;
+  interrupt?: boolean;
 };
 
 export type SyntheticValidator<T = unknown, S extends object = any> = {

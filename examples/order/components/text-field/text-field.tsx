@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 import { Root, Input, Label, ErrorMessage } from './styled';
 
@@ -11,7 +11,7 @@ export type TextFieldProps<T = string | number> = {
   onChange: (value: T) => void;
 };
 
-const TextField: React.FC<TextFieldProps> = props => {
+const TextField = forwardRef<HTMLInputElement, TextFieldProps>((props, ref) => {
   const { value, type = 'text', error, label, placeholder, onChange } = props;
   const hasError = Boolean(error);
 
@@ -25,11 +25,18 @@ const TextField: React.FC<TextFieldProps> = props => {
     <Root>
       <Label>
         {label ? `${label}:` : null}
-        <Input type={type} value={value} hasError={hasError} placeholder={placeholder} onChange={handleChange} />
+        <Input
+          ref={ref}
+          type={type}
+          value={value}
+          hasError={hasError}
+          placeholder={placeholder}
+          onChange={handleChange}
+        />
       </Label>
       {error && <ErrorMessage>{error}</ErrorMessage>}
     </Root>
   );
-};
+});
 
 export { TextField };

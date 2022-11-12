@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useImperativeHandle, useEffect } from 'react';
+import React, { useMemo, useState, useImperativeHandle, useEffect, useLayoutEffect } from 'react';
 
 import { type SyntheticValidator, type Validator } from './types';
 import { FormContext, type FormContextValue } from './context';
@@ -18,7 +18,7 @@ export type FormProps<T extends object> = {
   name?: string;
   initialFormValue: T;
   connectedRef?: React.Ref<FormRef<T>>;
-  interruptValidation?: boolean;
+  interrupt?: boolean;
   validators?: Array<Validator<T, T>>;
   children: (options: FormChildrenOptions<T>) => React.ReactElement;
   onValidate?: (options: OnValidateOptions<T>) => void;
@@ -34,7 +34,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
     initialFormValue,
     connectedRef,
     validators: formValidators = [],
-    interruptValidation,
+    interrupt,
     children,
     onValidate,
     onChange,
@@ -48,7 +48,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const scope = useMemo(() => ({ formValue: clone(initialFormValue) }), []);
   const formValue = scope.formValue;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const validators: Array<SyntheticValidator> = formValidators.map(validator => {
       return {
         ...validator,
@@ -120,7 +120,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
           if (!newErrors[validator.name]) {
             newErrors[validator.name] = validator.message;
           }
-          if (interruptValidation) {
+          if (interrupt || validator.interrupt) {
             break;
           }
         }

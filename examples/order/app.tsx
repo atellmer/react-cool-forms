@@ -40,9 +40,10 @@ const App: React.FC<AppProps> = props => {
                     getValue={(x: MyForm) => x.name}
                     setValue={(x, v) => (x.name = v)}
                     enableOnChangeValidation
+                    onValidate={({ nodeRef, isValid }) => console.log(isValid, nodeRef)}
                     validators={[required]}>
-                    {({ value, error, onChange }) => (
-                      <TextField label='Name' value={value} error={error} onChange={onChange} />
+                    {({ value, error, nodeRef, onChange }) => (
+                      <TextField ref={nodeRef} label='Name' value={value} error={error} onChange={onChange} />
                     )}
                   </Field>
                   <Field

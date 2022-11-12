@@ -107,7 +107,7 @@ import { Form } from 'react-cool-forms';
 type FormProps<T> = {
   initialFormValue: T;
   connectedRef?: React.Ref<FormRef<T>>;
-  interruptValidation?: boolean;
+  interrupt?: boolean;
   validators?: Array<Validator<T, T>>;
   onValidate?: (options: OnValidateOptions<T>) => void;
   onChange?: (options: OnChangeOptions<T>) => void;
@@ -120,7 +120,7 @@ FormProps
 |---------------------|----------|----------------------------------------------------------------|
 | initialFormValue    | ✅       | Initialization object.                                          |
 | connectedRef        |          | Ref for imperative access to main methods.                      |
-| interruptValidation |          | Indicates whether to stop validation on the first error or not. |
+| interrupt           |          | Indicates whether to stop validation on the first error or not. |
 | validators          |          | Array of root validators.                                       |
 | onValidate          |          | Called every time during validation.                            |
 | onChange            |          | Called every time formValue changes.                            |
@@ -250,7 +250,7 @@ FieldChildrenOptions
 
 ### Validator
 
-A validator is a simple object that contains two fields: a method and a message. If you want to implement asynchronous validation, for example for a request to the server, then in the validation method, you must return a promise. You can also make validation dependent on other fields, due to the fact that the validation method accepts not only the value of one validated field, but also the value of the entire form.
+A validator is a simple object that contains three fields: a method, a message and an innerrupt. If you want to implement asynchronous validation, for example for a request to the server, then in the validation method, you must return a promise. You can also make validation dependent on other fields, due to the fact that the validation method accepts not only the value of one validated field, but also the value of the entire form. Interrupt 
 
 ```tsx
 import { type Validator } from 'react-cool-forms';
@@ -260,6 +260,7 @@ import { type Validator } from 'react-cool-forms';
 ```tsx
 type Validator<T, S> = {
   method: (options: ValidatorMethodOptions<T, S>) => boolean | Promise<boolean>;
+  interrupt: boolean; // Whether to abort validation if it fails on this validator
   message: string;
 };
 
@@ -345,7 +346,7 @@ type RepeaterProps<T, S> = {
   getValue: (formValue: S) => Array<T>;
   setValue: (formValue: S, fieldValue: Array<T>) => void;
   getKey: (formValue: T) => string | number;
-  interruptValidation?: boolean;
+  interrupt?: boolean;
   triggerPosition?: 'before' | 'after';
   renderTrigger?: (options: RenderTriggerOptions<T>) => React.ReactElement;
   children: (options: RepeaterChildrenOptions<T>) => React.ReactElement;
@@ -360,7 +361,7 @@ RepeaterProps
 | getValue            | ✅        | Value access function inside formValue.                                                                                  |
 | setValue            | ✅        | Function to set a new value.                                                                                             |
 | getKey              | ✅        | A function to return the unique ID of an object. Needed so that React knows when it should unmount the node completely. |
-| interruptValidation |          | Indicates whether to stop validation on the first error or not.                                                          |
+| interrupt           |          | Indicates whether to stop validation on the first error or not.                                                          |
 | triggerPosition    |          | Specifies where to render form control buttons: before or after the list.                                                |
 | renderTrigger       |          | A function that that takes options (RenderTriggerOptions) and should render buttons for adding elements to an array.                                                  |
 | children            | ✅        | Render function that takes options (RepeaterChildrenOptions).                                                                                                         |
