@@ -24,7 +24,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>((props, ref) => {
   };
 
   return (
-    <Root>
+    <Root className='text-field'>
       <Label>
         {label ? <span style={{ display: 'block', marginBottom: 2 }}>{label}:</span> : null}
         <Input

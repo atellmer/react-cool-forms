@@ -7,9 +7,13 @@ export type ButtonProps = {
 } & React.AllHTMLAttributes<HTMLButtonElement>;
 
 const Button: React.FC<ButtonProps> = props => {
-  const { children, onClick } = props;
+  const { children, disabled, onClick } = props;
 
-  return <Root onClick={onClick}>{children}</Root>;
+  return (
+    <Root disabled={disabled} onClick={onClick}>
+      {children}
+    </Root>
+  );
 };
 
 export { Button };

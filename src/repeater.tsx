@@ -82,6 +82,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
   const handleChange =
     (idx: number) =>
     ({ formValue: item }: OnChangeOptions<T>) => {
+      const { formValue } = formState;
       const items = getValue(formValue);
 
       items[idx] = item;
@@ -90,6 +91,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
     };
 
   const append = useEvent((item: T, shouldFocus?: boolean) => {
+    const { formValue } = formState; // important
     const items = getValue(formValue);
 
     items.push(item);
@@ -99,6 +101,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
   });
 
   const prepend = useEvent((item: T, shouldFocus?: boolean) => {
+    const { formValue } = formState;
     const items = getValue(formValue);
 
     items.unshift(item);
@@ -108,6 +111,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
   });
 
   const insert = useEvent((idx: number, item: T, shouldFocus?: boolean) => {
+    const { formValue } = formState;
     const items = getValue(formValue);
 
     items.splice(idx, 0, item);
@@ -117,6 +121,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
   });
 
   const swap = useEvent((from: number, to: number) => {
+    const { formValue } = formState;
     const items = getValue(formValue);
     const itemFrom = items[from];
     const itemTo = items[to];
@@ -130,6 +135,7 @@ function Repeater<T extends object, S extends object>(props: RepeaterProps<T, S>
   });
 
   const remove = useEvent((sourceIdx: number | Array<number>) => {
+    const { formValue } = formState;
     const idxs = Array.isArray(sourceIdx) ? sourceIdx : [sourceIdx];
     const items = getValue(formValue);
 

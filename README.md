@@ -362,9 +362,10 @@ const setCompanyName = (company: Company, value: string) => (company.name = valu
           return (
             <>
               <Field
-                name={`companies(${key}).name`} // Name can be any unique value
+                name={`companies(${key}).name`} // name can be any unique value
                 getValue={getCompanyName}
                 setValue={setCompanyName}
+                updatingKey={idx} // for correct removing
                 validators={[required]}>
                 {({ value, error, onChange }) => <div>Some children here...</div>}
               </Field>

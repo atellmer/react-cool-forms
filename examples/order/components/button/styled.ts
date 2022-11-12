@@ -13,6 +13,11 @@ const Root = styled.button`
   &:hover {
     background-color: #005b9f;
   }
+
+  &[disabled] {
+    background-color: #757575;
+    cursor: default;
+  }
 `;
 
 export { Root };
