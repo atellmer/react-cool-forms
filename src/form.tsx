@@ -45,7 +45,7 @@ function Form<T extends object>(props: FormProps<T>): React.ReactElement {
   const { update } = useUpdate();
   const [errors, setErrors] = useState<Record<string, string>>(null);
   const [inProcess, setInProcess] = useState(false);
-  const scope = useMemo(() => ({ formValue: clone(initialFormValue) }), []);
+  const scope = useMemo<FormScope<T>>(() => ({ formValue: clone(initialFormValue) }), []);
   const formValue = scope.formValue;
 
   useLayoutEffect(() => {
@@ -353,6 +353,10 @@ const FormComponent: React.FC<FormProps<{}>> = Form;
 FormComponent.defaultProps = {
   onValidate: () => {},
   onChange: () => {},
+};
+
+type FormScope<T extends object> = {
+  formValue: T;
 };
 
 export type FormRef<T extends object> = {

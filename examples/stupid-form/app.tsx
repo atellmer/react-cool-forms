@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import {
   Form,
@@ -6,7 +6,6 @@ import {
   Repeater,
   Debugger,
   type Validator,
-  type RepeaterRef,
   type RenderTriggerOptions,
   type OnSubmitOptions,
   type FormatterOptions,
@@ -17,10 +16,11 @@ import { TextField } from './components/text-field';
 import { Checkbox } from './components/checkbox';
 import { Button } from './components/button';
 import { IconButton } from './components/icon-button';
+import { SelectField } from './components/select-field';
 
 export type AppProps = {};
 
-const App: React.FC<AppProps> = props => {
+const App: React.FC<AppProps> = () => {
   const initialFormValue: MyForm = {
     name: 'Alex',
     address: '',
@@ -42,7 +42,7 @@ const App: React.FC<AppProps> = props => {
         <span>
           count: {size} {isLimit ? '(maximum limit reached 🙃)' : ''}
         </span>
-        <Button disabled={isLimit} onClick={() => append({ ID: getNextItemID(), name: '' })}>
+        <Button disabled={isLimit} onClick={() => append({ ID: getNextItemID(), name: '', fruit: null })}>
           Add item
         </Button>
       </TriggerLayout>
@@ -52,10 +52,13 @@ const App: React.FC<AppProps> = props => {
   return (
     <Root>
       <Content>
-        <Form initialFormValue={initialFormValue} onSubmit={handleSubmit}>
-          {({ formValue, submit, reset }) => {
+        <Form name='stupidForm' initialFormValue={initialFormValue} validators={[hasItems]} onSubmit={handleSubmit}>
+          {({ formValue, errors, submit, reset }) => {
+            const hasRootError = errors && errors['stupidForm'] && formValue.items.length === 0;
+
             return (
               <>
+                <h1>The stupid form 🥳 {hasRootError ? '(You should add item 😈)' : ''}</h1>
                 <div>
                   <Field
                     name='name'
@@ -124,10 +127,10 @@ const App: React.FC<AppProps> = props => {
                             setValue={(x, v) => (x.tip = v as number)}
                             enableOnChangeValidation
                             formatter={formatCurrency}
-                            validators={[required, isSmallTip]}>
+                            validators={[required, isSmallTip, isBigTip]}>
                             {({ value, error, notify, onChange }) => (
                               <TextField
-                                label='Tip'
+                                label='Tip (wait, what for? 🤪)'
                                 value={value}
                                 error={error}
                                 onChange={onChange}
@@ -153,26 +156,45 @@ const App: React.FC<AppProps> = props => {
                       renderTrigger={renderTrigger}>
                       {({ idx, key, remove }) => {
                         return (
-                          <Field
-                            name={`items(${key}).name`}
-                            getValue={(x: OrderItem) => x.name}
-                            setValue={(x: OrderItem, v) => (x.name = v)}
-                            enableOnChangeValidation
-                            updatingKey={idx}
-                            formatter={formatUppercase}
-                            validators={[required]}>
-                            {({ value, error, onChange }) => (
-                              <Item>
+                          <Item>
+                            <Field
+                              name={`items(${key}).name`}
+                              getValue={(x: OrderItem) => x.name}
+                              setValue={(x: OrderItem, v) => (x.name = v)}
+                              enableOnChangeValidation
+                              updatingKey={idx}
+                              formatter={formatUppercase}
+                              validators={[required]}>
+                              {({ value, error, onChange }) => (
                                 <TextField
-                                  placeholder='Enter the item name (uppercased)...'
+                                  placeholder='Enter the name of your best friend...'
                                   value={value}
                                   error={error}
                                   onChange={onChange}
                                 />
-                                <IconButton variant='delete' onClick={() => remove(idx)} />
-                              </Item>
-                            )}
-                          </Field>
+                              )}
+                            </Field>
+                            <Field
+                              name={`items(${key}).fruit`}
+                              getValue={(x: OrderItem) => x.fruit}
+                              setValue={(x: OrderItem, v) => (x.fruit = v)}
+                              enableOnChangeValidation
+                              updatingKey={idx}
+                              validators={[required as unknown as Validator<Fruit>, isHeNormal]}>
+                              {({ value, error, onChange }) => (
+                                <SelectField
+                                  value={value}
+                                  getID={(x: Fruit) => x.ID}
+                                  getName={(x: Fruit) => x.name}
+                                  dataSource={fruits}
+                                  error={error}
+                                  emptyChoice='He loves this fruit 😊'
+                                  onChange={onChange}
+                                />
+                              )}
+                            </Field>
+                            <IconButton variant='delete' onClick={() => remove(idx)} />
+                          </Item>
                         );
                       }}
                     </Repeater>
@@ -204,6 +226,17 @@ type MyForm = {
 type OrderItem = {
   ID: number;
   name: string;
+  fruit: Fruit;
+};
+
+type Fruit = {
+  ID: number;
+  name: string;
+};
+
+const hasItems: Validator<MyForm, MyForm> = {
+  method: ({ fieldValue }) => fieldValue.items.length > 0,
+  message: `You should add item`,
 };
 
 const required: Validator<string> = {
@@ -219,6 +252,16 @@ const isPhone: Validator<string> = {
 const isSmallTip: Validator<number | string> = {
   method: ({ fieldValue }) => transformCurrencyStringToNumber(fieldValue) < 20,
   message: `This tip is too big`,
+};
+
+const isBigTip: Validator<number | string> = {
+  method: ({ fieldValue }) => transformCurrencyStringToNumber(fieldValue) > 1,
+  message: `This tip is too small`,
+};
+
+const isHeNormal: Validator<Fruit> = {
+  method: ({ fieldValue }) => fieldValue?.ID !== 6,
+  message: 'Is he normal?',
 };
 
 const formatPhone = (options: FormatterOptions<string, HTMLInputElement>) => {
@@ -243,6 +286,15 @@ const formatUppercase = (options: FormatterOptions<string, HTMLInputElement>) =>
 let nextitemID = 0;
 
 const getNextItemID = () => ++nextitemID;
+
+const fruits: Array<Fruit> = [
+  { ID: 1, name: 'Banana 🍌' },
+  { ID: 2, name: 'Orange 🍊' },
+  { ID: 3, name: 'Apple 🍎' },
+  { ID: 4, name: 'Cherry 🍒' },
+  { ID: 5, name: 'Watermelon 🍉' },
+  { ID: 6, name: `Doesn't like it 🥴` },
+];
 
 const Root = styled.div`
   position: relative;
@@ -279,7 +331,6 @@ const HorizontalLayout = styled.div`
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
-    grid-template-rows: 48px 48px;
     margin-bottom: 12px;
 
     & .text-field {
@@ -301,7 +352,7 @@ const TriggerLayout = styled.div`
 const Item = styled.div`
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 32px;
+  grid-template-columns: 1fr 0.5fr 32px;
   grid-gap: 16px;
   align-items: start;
   padding: 8px 0;

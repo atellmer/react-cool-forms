@@ -43,4 +43,4 @@ const Label = styled.label`
   font-size: 0.9rem;
 `;
 
-export { Root, Input, ErrorMessage, Label };
+export { colors, Root, Input, ErrorMessage, Label };
