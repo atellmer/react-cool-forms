@@ -16,19 +16,9 @@
       "es7",
       "dom"
     ],
-    "baseUrl": ".",
-    "paths": {
-      "react-cool-forms": [
-        "./src/index"
-      ],
-      "react-cool-forms/*": [
-        "./src/*"
-      ],
-    }
+    "baseUrl": "."
   },
   "include": [
-    "./src/**/*",
     "./examples/**/*",
-    "./*.js"
   ]
 }
