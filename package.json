@@ -16,6 +16,7 @@
     "forms",
     "form-state",
     "form-builder",
+    "dynamic-forms",
     "validation",
     "formatters",
     "asynchronous",
