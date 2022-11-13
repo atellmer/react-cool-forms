@@ -1,6 +1,6 @@
 {
   "name": "react-cool-forms",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "AlexPlex",
   "description": "Powerful and flexible forms for React",
   "license": "MIT",
@@ -10,7 +10,18 @@
     "build": "npm run build:prod",
     "build:prod": "webpack --config webpack.config --env production"
   },
-  "keywords": [],
+  "keywords": [
+    "react",
+    "typescript",
+    "forms",
+    "form-state",
+    "form-builder",
+    "validation",
+    "formatters",
+    "asynchronous",
+    "arrays",
+    "performance"
+  ],
   "devDependencies": {
     "@types/react": "^18.0.24",
     "@types/react-dom": "^18.0.8",
