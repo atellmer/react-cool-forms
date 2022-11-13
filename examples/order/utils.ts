@@ -7,23 +7,34 @@ type MaskedOptions = {
 function masked(options: MaskedOptions) {
   const { prevValue = '', nextValue = '', mask } = options;
 
-  if (prevValue.length >= nextValue.length) return nextValue;
+  if (prevValue.length > nextValue.length) return nextValue;
 
+  const regexpTokens = mask.filter(x => x instanceof RegExp);
+
+  if (nextValue.length < regexpTokens.length && prevValue.length === nextValue.length) {
+    return nextValue;
+  }
+
+  const stringTokens = mask.filter(x => typeof x === 'string');
   const values = [];
-  let idx = 0;
+  let value = nextValue;
+  let idx = -1;
+
+  for (const token of stringTokens) {
+    value = value.replace(token, '');
+  }
 
   for (const token of mask) {
     if (typeof token === 'string') {
       values.push(token);
     } else if (token instanceof RegExp) {
-      if (token.test(nextValue[idx])) {
-        values.push(nextValue[idx]);
+      idx++;
+      if (token.test(value[idx])) {
+        values.push(value[idx]);
       } else {
         break;
       }
     }
-
-    idx++;
   }
 
   const formattedValue = values.join('');
