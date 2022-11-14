@@ -218,7 +218,7 @@ FieldProps
 | children                 | ✅       | Render function that takes options. (FieldChildrenOptions).                                                                                                                       |
 
 ```tsx
-export type OnValidateFieldOptions<T, N extends HTMLElement> = {
+type OnValidateFieldOptions<T, N extends HTMLElement> = {
   nodeRef: React.RefObject<N> | null;
   isValid: boolean;
   fieldValue: T;
