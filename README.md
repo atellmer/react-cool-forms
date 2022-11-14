@@ -22,6 +22,7 @@ Powerful and flexible forms for React 🎉
 
 ## Demo
 - [Stupid Form](https://atellmer.github.io/react-cool-forms/examples/stupid-form/)
+- [3K inputs Form](https://atellmer.github.io/react-cool-forms/examples/table-form/)
 
 ## Motivation
 I have been looking for a form validation library for React in the npm repository for a long time, but all of them did not suit me for one reason or another. First of all, I lacked the flexibility of the API of these libraries. Most of them are based on the use of simple HTML inputs and the like. But writing complex forms is not limited to HTML inputs or checkboxes or something else. Having a lot of experience with forms at my former company, I decided to write this library. The main message: any arbitrarily complex component that implements the value / onChange interface can be a full member of the form and pass the required validation. I also combined the classic Observer pattern along with the React Context and React memoization to get the best input performance without debounce technique (tested 3000 inputs in one form).
