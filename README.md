@@ -404,7 +404,7 @@ RepeaterProps
 | getKey              | ✅        | Function to return the unique ID of an object. Needed so that React knows when it should unmount the node completely. |
 | interrupt           |          | Indicates whether to stop validation on the first error or not.                                                          |
 | triggerPosition    |          | Specifies where to render form control buttons: before or after the list.                                                |
-| renderTrigger       |          | Function that that takes options (RenderTriggerOptions) and should render buttons for adding elements to an array.                                                  |
+| renderTrigger       |          | Function that takes options (RenderTriggerOptions) and should render buttons for adding elements to an array.                                                  |
 | children            | ✅        | Render function that takes options (RepeaterChildrenOptions).                                                                                                         |
 
 ```tsx
