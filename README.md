@@ -249,7 +249,7 @@ FieldChildrenOptions
 
 ### Validator
 
-A validator is a simple object that contains three fields: a method, a message and an innerrupt. If you want to implement asynchronous validation, for example for a request to the server, then in the validation method, you must return a promise. You can also make validation dependent on other fields, due to the fact that the validation method accepts not only the value of one validated field, but also the value of the entire form. Interrupt 
+A validator is a simple object that contains three fields: a method, a message and an innerrupt. If you want to implement asynchronous validation, for example for a request to the server, then in the validation method, you must return a promise. You can also make validation dependent on other fields, due to the fact that the validation method accepts not only the value of one validated field, but also the value of the entire form.
 
 ```tsx
 import { type Validator, type ValidatorMethodOptions } from 'react-cool-forms';
